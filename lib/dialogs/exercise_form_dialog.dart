@@ -1,0 +1,335 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/exercise.dart';
+import '../providers/exercise_provider.dart';
+
+class ExerciseFormDialog extends StatefulWidget {
+  final Exercise? exercise; // null for add, non-null for edit
+  final String? initialName;
+  
+  const ExerciseFormDialog({super.key, this.exercise, this.initialName});
+
+  @override
+  State<ExerciseFormDialog> createState() => _ExerciseFormDialogState();
+}
+
+class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _instructionsController = TextEditingController();
+  final _muscleGroupsController = TextEditingController();
+  
+  int? _selectedCategoryId;
+  bool _isWeightBased = true;
+  bool _isTimeBased = false;
+  bool _isRepsBased = true;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    if (widget.exercise != null) {
+      // Edit Mode
+      _nameController.text = widget.exercise!.name;
+      _instructionsController.text = widget.exercise!.instructions ?? '';
+      _muscleGroupsController.text = widget.exercise!.muscleGroups.join(', ');
+      _selectedCategoryId = widget.exercise!.categoryId;
+      _isWeightBased = widget.exercise!.isWeightBased;
+      _isTimeBased = widget.exercise!.isTimeBased;
+      _isRepsBased = widget.exercise!.isRepsBased;
+    } else if (widget.initialName != null && widget.initialName!.trim().isNotEmpty) {
+      _nameController.text = widget.initialName!.trim();
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _instructionsController.dispose();
+    _muscleGroupsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ExerciseProvider>(
+      builder: (context, exerciseProvider, child) {
+        final categories = exerciseProvider.categories;
+        
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: double.maxFinite,
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Text(
+                          widget.exercise == null ? 'Add Exercise' : 'Edit Exercise',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Exercise Name
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Exercise Name *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.fitness_center),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter an exercise name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Category Selection
+                    DropdownButtonFormField<int>(
+                      value: _selectedCategoryId,
+                      decoration: const InputDecoration(
+                        labelText: 'Category *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.category),
+                      ),
+                      items: categories.map((category) {
+                        return DropdownMenuItem<int>(
+                          value: category.id,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: category.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(category.name),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Please select a category';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategoryId = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Instructions/Notes
+                    TextFormField(
+                      controller: _instructionsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Instructions/Notes',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.notes),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                      textInputAction: TextInputAction.newline,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Muscle Groups
+                    TextFormField(
+                      controller: _muscleGroupsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Muscle Groups (comma separated)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.accessibility_new),
+                        hintText: 'e.g., chest, triceps, shoulders',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Exercise Type Switches
+                    Text(
+                      'Exercise Type',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    SwitchListTile(
+                      title: const Text('Weight-based'),
+                      subtitle: const Text('Track weight lifted'),
+                      value: _isWeightBased,
+                      onChanged: (value) {
+                        setState(() {
+                          _isWeightBased = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    SwitchListTile(
+                      title: const Text('Time-based'),
+                      subtitle: const Text('Track duration'),
+                      value: _isTimeBased,
+                      onChanged: (value) {
+                        setState(() {
+                          _isTimeBased = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    SwitchListTile(
+                      title: const Text('Reps-based'),
+                      subtitle: const Text('Track repetitions'),
+                      value: _isRepsBased,
+                      onChanged: (value) {
+                        setState(() {
+                          _isRepsBased = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    
+                    const SizedBox(height: 24),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _isLoading ? null : () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _saveExercise,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(widget.exercise == null ? 'Add Exercise' : 'Save Changes'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _saveExercise() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final exerciseProvider = context.read<ExerciseProvider>();
+      
+      // Parse muscle groups
+      final muscleGroups = _muscleGroupsController.text
+          .split(',')
+          .map((group) => group.trim())
+          .where((group) => group.isNotEmpty)
+          .toList();
+
+      if (widget.exercise == null) {
+        // Add new exercise
+        final newExercise = Exercise(
+          name: _nameController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          instructions: _instructionsController.text.trim().isNotEmpty
+              ? _instructionsController.text.trim()
+              : null,
+          muscleGroups: muscleGroups,
+          isWeightBased: _isWeightBased,
+          isTimeBased: _isTimeBased,
+          isRepsBased: _isRepsBased,
+        );
+        
+        await exerciseProvider.addExercise(newExercise);
+      } else {
+        // Update existing exercise
+        final updatedExercise = widget.exercise!.copyWith(
+          name: _nameController.text.trim(),
+          categoryId: _selectedCategoryId,
+          instructions: _instructionsController.text.trim().isNotEmpty
+              ? _instructionsController.text.trim()
+              : null,
+          muscleGroups: muscleGroups,
+          isWeightBased: _isWeightBased,
+          isTimeBased: _isTimeBased,
+          isRepsBased: _isRepsBased,
+        );
+        
+        await exerciseProvider.updateExercise(updatedExercise);
+      }
+
+      if (mounted) {
+        Navigator.pop(context, true); // Return true to indicate success
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.exercise == null 
+                  ? 'Exercise added successfully' 
+                  : 'Exercise updated successfully',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+}
