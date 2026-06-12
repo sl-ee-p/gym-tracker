@@ -1,9 +1,168 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../providers/progress_provider.dart';
 import '../providers/exercise_provider.dart';
 import 'workout_history_screen.dart';
+
+/// Resolved vertical-axis bounds for a chart: a padded, "nice"-rounded range
+/// with an interval that yields a small number of evenly spaced gridlines.
+class _ChartAxis {
+  final double minY;
+  final double maxY;
+  final double interval;
+
+  const _ChartAxis({
+    required this.minY,
+    required this.maxY,
+    required this.interval,
+  });
+}
+
+/// Computes clean axis bounds for [values]. When [startAtZero] is false the
+/// range hugs the data (so progress is easy to read instead of being squashed
+/// against a zero baseline), while still padding the line away from the edges.
+_ChartAxis _computeNiceAxis(List<double> values, {bool startAtZero = false}) {
+  if (values.isEmpty) {
+    return const _ChartAxis(minY: 0, maxY: 10, interval: 2.5);
+  }
+
+  var dataMin = values.reduce((a, b) => a < b ? a : b);
+  var dataMax = values.reduce((a, b) => a > b ? a : b);
+  if (startAtZero) dataMin = 0;
+
+  if (dataMin == dataMax) {
+    // Single value (or all equal): build a band around it.
+    final v = dataMin;
+    final span = v.abs() < 1 ? 1.0 : v.abs() * 0.1;
+    dataMin = startAtZero ? 0 : v - span;
+    dataMax = v + span;
+  }
+
+  var range = dataMax - dataMin;
+  if (range <= 0) range = 1;
+
+  final pad = range * 0.15;
+  var lo = startAtZero ? 0.0 : dataMin - pad;
+  var hi = dataMax + pad;
+  // Keep non-negative data on a non-negative axis.
+  if (lo < 0 && dataMin >= 0) lo = 0;
+
+  final interval = _niceNumber((hi - lo) / 4, round: true);
+
+  // Snap bounds outward to whole intervals so labels are round numbers.
+  lo = (lo / interval).floorToDouble() * interval;
+  hi = (hi / interval).ceilToDouble() * interval;
+  if (lo < 0 && dataMin >= 0) lo = 0;
+  if (hi <= lo) hi = lo + interval;
+
+  return _ChartAxis(minY: lo, maxY: hi, interval: interval);
+}
+
+/// Rounds [value] to a "nice" number (1, 2, 5 × 10ⁿ) for axis intervals.
+double _niceNumber(double value, {required bool round}) {
+  if (value <= 0) return 1;
+  final exponent = (math.log(value) / math.ln10).floor();
+  final fraction = value / math.pow(10, exponent);
+  double niceFraction;
+  if (round) {
+    if (fraction < 1.5) {
+      niceFraction = 1;
+    } else if (fraction < 3) {
+      niceFraction = 2;
+    } else if (fraction < 7) {
+      niceFraction = 5;
+    } else {
+      niceFraction = 10;
+    }
+  } else {
+    if (fraction <= 1) {
+      niceFraction = 1;
+    } else if (fraction <= 2) {
+      niceFraction = 2;
+    } else if (fraction <= 5) {
+      niceFraction = 5;
+    } else {
+      niceFraction = 10;
+    }
+  }
+  return niceFraction * math.pow(10, exponent).toDouble();
+}
+
+/// The text rendered inside a chart point's tooltip.
+class _TooltipContent {
+  final String header;
+  final String value;
+  final String? note;
+
+  const _TooltipContent({
+    required this.header,
+    required this.value,
+    this.note,
+  });
+}
+
+/// Builds touch behaviour shared by the progress charts: a generous tap
+/// threshold so points are easy to hit, a highlighted indicator on the touched
+/// point, and a tooltip (date, value and any note) for the touched spot.
+LineTouchData _buildLineTouchData(
+  BuildContext context, {
+  required _TooltipContent Function(int index) tooltipBuilder,
+}) {
+  final primary = Theme.of(context).colorScheme.primary;
+  return LineTouchData(
+    enabled: true,
+    handleBuiltInTouches: true,
+    // Larger threshold => the tooltip appears when tapping anywhere near a
+    // point, not only directly on the thin line.
+    touchSpotThreshold: 28,
+    getTouchedSpotIndicator: (barData, spotIndexes) {
+      return spotIndexes.map((index) {
+        return TouchedSpotIndicatorData(
+          FlLine(color: primary.withOpacity(0.4), strokeWidth: 2),
+          FlDotData(
+            show: true,
+            getDotPainter: (spot, percent, bar, i) => FlDotCirclePainter(
+              radius: 6,
+              color: primary,
+              strokeWidth: 2,
+              strokeColor: Theme.of(context).colorScheme.surface,
+            ),
+          ),
+        );
+      }).toList();
+    },
+    touchTooltipData: LineTouchTooltipData(
+      tooltipBgColor: Theme.of(context).colorScheme.inverseSurface,
+      tooltipRoundedRadius: 8,
+      maxContentWidth: 220,
+      fitInsideHorizontally: true,
+      fitInsideVertically: true,
+      getTooltipItems: (touchedSpots) {
+        return touchedSpots.map((spot) {
+          final content = tooltipBuilder(spot.x.round());
+          final onInverse = Theme.of(context).colorScheme.onInverseSurface;
+          final buffer = StringBuffer()
+            ..writeln(content.header)
+            ..write(content.value);
+          if (content.note != null && content.note!.trim().isNotEmpty) {
+            buffer.write('\n📝 ${content.note!.trim()}');
+          }
+          return LineTooltipItem(
+            buffer.toString(),
+            TextStyle(
+              color: onInverse,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+        }).toList();
+      },
+    ),
+  );
+}
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -382,26 +541,37 @@ class _ExerciseProgressTabState extends State<_ExerciseProgressTab> {
       spots.add(FlSpot(i.toDouble(), value));
     }
 
-    final maxYValue = spots
-        .map((spot) => spot.y)
-        .fold<double>(0, (maxValue, y) => y > maxValue ? y : maxValue);
-    final maxY = maxYValue <= 0 ? 10.0 : maxYValue * 1.2;
+    final axis = _computeNiceAxis(spots.map((s) => s.y).toList());
     final xLabelStep = progressData.length <= 5
         ? 1
         : (progressData.length / 5).ceil();
+    final primary = Theme.of(context).colorScheme.primary;
 
     return LineChart(
       LineChartData(
         minX: 0,
         maxX: (spots.length - 1).toDouble(),
-        minY: 0,
-        maxY: maxY,
+        minY: axis.minY,
+        maxY: axis.maxY,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: maxY / 4,
+          horizontalInterval: axis.interval,
         ),
         borderData: FlBorderData(show: false),
+        lineTouchData: _buildLineTouchData(
+          context,
+          tooltipBuilder: (index) {
+            final date = progressData[index]['date'] as DateTime;
+            final maxWeight = (progressData[index]['maxWeight'] as num).toDouble();
+            final note = progressData[index]['note'] as String?;
+            return _TooltipContent(
+              header: '${date.day}/${date.month}/${date.year}',
+              value: '${maxWeight.toStringAsFixed(1)} kg',
+              note: note,
+            );
+          },
+        ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -413,7 +583,7 @@ class _ExerciseProgressTabState extends State<_ExerciseProgressTab> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 42,
-              interval: maxY / 4,
+              interval: axis.interval,
               getTitlesWidget: (value, meta) => Text(
                 value.toStringAsFixed(0),
                 style: Theme.of(context).textTheme.labelSmall,
@@ -452,12 +622,23 @@ class _ExerciseProgressTabState extends State<_ExerciseProgressTab> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: Theme.of(context).colorScheme.primary,
+            color: primary,
             barWidth: 3,
-            dotData: FlDotData(show: spots.length <= 12),
+            // Always show dots so every recorded weight is a visible,
+            // tappable target.
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, bar, index) =>
+                  FlDotCirclePainter(
+                radius: spots.length <= 20 ? 4 : 2.5,
+                color: primary,
+                strokeWidth: 1.5,
+                strokeColor: Theme.of(context).colorScheme.surface,
+              ),
+            ),
             belowBarData: BarAreaData(
               show: true,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              color: primary.withOpacity(0.2),
             ),
           ),
         ],
@@ -640,29 +821,35 @@ class _WeightProgressTabState extends State<_WeightProgressTab> {
       spots.add(FlSpot(i.toDouble(), value));
     }
 
-    final minYValue = spots
-        .map((spot) => spot.y)
-        .fold<double>(spots.first.y, (minValue, y) => y < minValue ? y : minValue);
-    final maxYValue = spots
-        .map((spot) => spot.y)
-        .fold<double>(spots.first.y, (maxValue, y) => y > maxValue ? y : maxValue);
-    final padding = (maxYValue - minYValue).abs() < 1 ? 1.0 : (maxYValue - minYValue) * 0.2;
-    final minY = ((minYValue - padding).clamp(0.0, double.infinity) as num).toDouble();
-    final maxY = maxYValue + padding;
+    final axis = _computeNiceAxis(spots.map((s) => s.y).toList());
     final xLabelStep = weightData.length <= 5 ? 1 : (weightData.length / 5).ceil();
+    final secondary = Theme.of(context).colorScheme.secondary;
 
     return LineChart(
       LineChartData(
         minX: 0,
         maxX: (spots.length - 1).toDouble(),
-        minY: minY,
-        maxY: maxY,
+        minY: axis.minY,
+        maxY: axis.maxY,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: (maxY - minY) / 4,
+          horizontalInterval: axis.interval,
         ),
         borderData: FlBorderData(show: false),
+        lineTouchData: _buildLineTouchData(
+          context,
+          tooltipBuilder: (index) {
+            final date = weightData[index]['date'] as DateTime;
+            final weight = (weightData[index]['weight'] as num).toDouble();
+            final note = weightData[index]['notes'] as String?;
+            return _TooltipContent(
+              header: '${date.day}/${date.month}/${date.year}',
+              value: '${weight.toStringAsFixed(1)} kg',
+              note: note,
+            );
+          },
+        ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -674,9 +861,9 @@ class _WeightProgressTabState extends State<_WeightProgressTab> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 42,
-              interval: (maxY - minY) / 4,
+              interval: axis.interval,
               getTitlesWidget: (value, meta) => Text(
-                value.toStringAsFixed(1),
+                value.toStringAsFixed(axis.interval < 1 ? 1 : 0),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
@@ -713,12 +900,21 @@ class _WeightProgressTabState extends State<_WeightProgressTab> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: Theme.of(context).colorScheme.secondary,
+            color: secondary,
             barWidth: 3,
-            dotData: FlDotData(show: spots.length <= 12),
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, bar, index) =>
+                  FlDotCirclePainter(
+                radius: spots.length <= 20 ? 4 : 2.5,
+                color: secondary,
+                strokeWidth: 1.5,
+                strokeColor: Theme.of(context).colorScheme.surface,
+              ),
+            ),
             belowBarData: BarAreaData(
               show: true,
-              color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+              color: secondary.withOpacity(0.2),
             ),
           ),
         ],

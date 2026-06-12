@@ -17,6 +17,7 @@ class WorkoutScreen extends StatefulWidget {
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
   bool _showRestTimer = false;
+  int? _selectedExerciseId;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +95,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
           final activeWorkout = workoutProvider.activeWorkout!;
           final currentWorkoutExercises = workoutProvider.getCurrentWorkoutExercises();
-          
+
+          // Resolve which exercise the set-input form targets. Fall back to the
+          // first exercise when nothing is selected (or the selection was
+          // removed), so there is always exactly one active input form.
+          final int? selectedExerciseId = currentWorkoutExercises
+                  .contains(_selectedExerciseId)
+              ? _selectedExerciseId
+              : (currentWorkoutExercises.isNotEmpty
+                  ? currentWorkoutExercises.first
+                  : null);
+
           return Stack(
             children: [
               Column(
@@ -219,49 +230,60 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         itemCount: currentWorkoutExercises.length,
                         itemBuilder: (context, index) {
                           final exerciseId = currentWorkoutExercises[index];
+                          final isSelected = exerciseId == selectedExerciseId;
                           return Consumer<ExerciseProvider>(
                             builder: (context, exerciseProvider, child) {
                               final exercise = exerciseProvider.getExerciseById(exerciseId);
                               if (exercise == null) return const SizedBox.shrink();
-                              
+
                               final sets = workoutProvider.getSetsForExercise(exerciseId);
-                              
+
                               return Column(
                                 children: [
-                                  // Exercise Sets Card
+                                  // Exercise Sets Card — tap to choose which
+                                  // exercise the input form below targets.
                                   ExerciseSetsCard(
                                     exercise: exercise,
                                     sets: sets,
                                     isActiveWorkout: true,
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedExerciseId = exerciseId;
+                                      });
+                                    },
                                     onDeleteSet: (set) async {
                                       await workoutProvider.deleteSet(set.id!);
                                     },
                                   ),
-                                  
-                                  const SizedBox(height: 16),
-                                  
-                                  // Set Input Form
-                                  SetInputForm(
-                                    exercise: exercise,
-                                    previousWeight: workoutProvider.getLastSetForExercise(exerciseId)?.weight,
-                                    previousReps: workoutProvider.getLastSetForExercise(exerciseId)?.reps,
-                                    previousDuration: workoutProvider.getLastSetForExercise(exerciseId)?.duration,
-                                    onSetAdded: (weight, reps, duration, notes) async {
-                                      await workoutProvider.addSet(
-                                        exerciseId: exerciseId,
-                                        weight: weight,
-                                        reps: reps,
-                                        duration: duration,
-                                        notes: notes,
-                                      );
-                                    },
-                                    onRestTimerRequested: ([int? restTime]) {
-                                      setState(() {
-                                        _showRestTimer = true;
-                                      });
-                                    },
-                                  ),
-                                  
+
+                                  // Set Input Form — only for the selected
+                                  // exercise, so there is a single form.
+                                  if (isSelected) ...[
+                                    const SizedBox(height: 16),
+                                    SetInputForm(
+                                      key: ValueKey('set-input-$exerciseId'),
+                                      exercise: exercise,
+                                      previousWeight: workoutProvider.getLastSetForExercise(exerciseId)?.weight,
+                                      previousReps: workoutProvider.getLastSetForExercise(exerciseId)?.reps,
+                                      previousDuration: workoutProvider.getLastSetForExercise(exerciseId)?.duration,
+                                      onSetAdded: (weight, reps, duration, notes) async {
+                                        await workoutProvider.addSet(
+                                          exerciseId: exerciseId,
+                                          weight: weight,
+                                          reps: reps,
+                                          duration: duration,
+                                          notes: notes,
+                                        );
+                                      },
+                                      onRestTimerRequested: ([int? restTime]) {
+                                        setState(() {
+                                          _showRestTimer = true;
+                                        });
+                                      },
+                                    ),
+                                  ],
+
                                   const SizedBox(height: 24),
                                 ],
                               );
@@ -583,7 +605,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     if (selectedExercise != null && mounted) {
       workoutProvider.addExerciseToWorkout(selectedExercise.id!);
-      
+      setState(() {
+        _selectedExerciseId = selectedExercise.id;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${selectedExercise.name} added to workout'),

@@ -8,6 +8,8 @@ class ExerciseSetsCard extends StatelessWidget {
   final Function(ExerciseSet)? onDeleteSet;
   final Function(ExerciseSet)? onEditSet;
   final bool isActiveWorkout;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
   const ExerciseSetsCard({
     super.key,
@@ -16,12 +18,26 @@ class ExerciseSetsCard extends StatelessWidget {
     this.onDeleteSet,
     this.onEditSet,
     this.isActiveWorkout = false,
+    this.isSelected = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      shape: isSelected
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            )
+          : null,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +111,7 @@ class ExerciseSetsCard extends StatelessWidget {
                       const SizedBox(width: 16),
                       const SizedBox(width: 70, child: Text('Duration', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w600))),
                     ],
-                    const Expanded(child: Text('Notes', style: TextStyle(fontWeight: FontWeight.w600))),
+                    const Spacer(),
                     if (isActiveWorkout) const SizedBox(width: 40), // Space for actions
                   ],
                 ),
@@ -127,6 +143,7 @@ class ExerciseSetsCard extends StatelessWidget {
             ],
           ],
         ),
+        ),
       ),
     );
   }
@@ -142,114 +159,133 @@ class ExerciseSetsCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Set Number
-          SizedBox(
-            width: 30,
-            child: Text(
-              '${set.setNumber}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-
-          // Weight
-          if (exercise.isWeightBased) ...[
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 60,
-              child: Text(
-                set.weight != null ? '${set.weight!.toStringAsFixed(1)} kg' : '-',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ],
-
-          // Reps
-          if (exercise.isRepsBased) ...[
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 50,
-              child: Text(
-                set.reps?.toString() ?? '-',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ],
-
-          // Duration
-          if (exercise.isTimeBased) ...[
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 70,
-              child: Text(
-                set.duration != null ? _formatDuration(set.duration!) : '-',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ],
-
-          // Notes
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              set.notes ?? '',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          // Actions (for active workout only)
-          if (isActiveWorkout) ...[
-            PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert,
-                size: 18,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              padding: EdgeInsets.zero,
-              itemBuilder: (context) => [
-                if (onEditSet != null)
-                  const PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 16),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
+          Row(
+            children: [
+              // Set Number
+              SizedBox(
+                width: 30,
+                child: Text(
+                  '${set.setNumber}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
-                if (onDeleteSet != null)
-                  const PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 16, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
+                ),
+              ),
+
+              // Weight
+              if (exercise.isWeightBased) ...[
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    set.weight != null ? '${set.weight!.toStringAsFixed(1)} kg' : '-',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
+                ),
               ],
-              onSelected: (value) {
-                switch (value) {
-                  case 'edit':
-                    onEditSet?.call(set);
-                    break;
-                  case 'delete':
-                    _confirmDeleteSet(context, set);
-                    break;
-                }
-              },
+
+              // Reps
+              if (exercise.isRepsBased) ...[
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    set.reps?.toString() ?? '-',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+
+              // Duration
+              if (exercise.isTimeBased) ...[
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    set.duration != null ? _formatDuration(set.duration!) : '-',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+
+              const Spacer(),
+
+              // Actions (for active workout only)
+              if (isActiveWorkout) ...[
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  padding: EdgeInsets.zero,
+                  itemBuilder: (context) => [
+                    if (onEditSet != null)
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 16),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                    if (onDeleteSet != null)
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 16, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                  ],
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        onEditSet?.call(set);
+                        break;
+                      case 'delete':
+                        _confirmDeleteSet(context, set);
+                        break;
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+
+          // Notes — shown on their own full-width line so they are fully
+          // readable instead of being truncated.
+          if (set.notes != null && set.notes!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.sticky_note_2_outlined,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    set.notes!.trim(),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

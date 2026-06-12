@@ -79,18 +79,29 @@ class ProgressProvider extends ChangeNotifier {
         double totalVolume = 0;
         int totalReps = 0;
         int totalSets = sets.length;
+        String? maxWeightNote;
 
         for (final set in sets) {
           final weight = (set['weight'] as double?) ?? 0;
           final reps = (set['reps'] as int?) ?? 0;
-          
+          final note = (set['notes'] as String?)?.trim();
+
           if (weight > maxWeight) {
             maxWeight = weight;
+            maxWeightNote = (note != null && note.isNotEmpty) ? note : null;
           }
-          
+
           totalVolume += weight * reps;
           totalReps += reps;
         }
+
+        // Collect every note recorded that day so they remain readable from
+        // the chart even when they belong to a non-max-weight set.
+        final allNotes = sets
+            .map((set) => (set['notes'] as String?)?.trim())
+            .where((note) => note != null && note.isNotEmpty)
+            .cast<String>()
+            .toList();
 
         _exerciseProgressData.add({
           'date': DateTime.parse(dateKey),
@@ -99,6 +110,8 @@ class ProgressProvider extends ChangeNotifier {
           'totalReps': totalReps,
           'totalSets': totalSets,
           'avgWeight': totalReps > 0 ? totalVolume / totalReps : 0,
+          'note': maxWeightNote,
+          'notes': allNotes,
         });
       });
 
