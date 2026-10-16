@@ -15,11 +15,28 @@ class WeightRepository {
     return maps.map((map) => WeightEntry.fromMap(map)).toList();
   }
 
-  Future<List<WeightEntry>> getWeightEntriesByDateRange(DateTime start, DateTime end) async {
+  /// Entries between [start] and [end], either of which may be null to leave
+  /// that end of the range open — a null [start] genuinely means "all time"
+  /// rather than some arbitrary trailing window.
+  Future<List<WeightEntry>> getWeightEntriesByDateRange(
+    DateTime? start,
+    DateTime? end,
+  ) async {
+    final clauses = <String>[];
+    final args = <dynamic>[];
+    if (start != null) {
+      clauses.add('date >= ?');
+      args.add(start.toIso8601String());
+    }
+    if (end != null) {
+      clauses.add('date <= ?');
+      args.add(end.toIso8601String());
+    }
+
     final maps = await _dbHelper.query(
       'weight_entries',
-      where: 'date >= ? AND date <= ?',
-      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      where: clauses.isEmpty ? null : clauses.join(' AND '),
+      whereArgs: args.isEmpty ? null : args,
       orderBy: 'date ASC',
     );
     return maps.map((map) => WeightEntry.fromMap(map)).toList();
@@ -95,8 +112,11 @@ class WeightRepository {
       whereArgs.add(endDate.toIso8601String());
     }
 
+    // $whereClause is interpolated three times below (two subqueries plus
+    // the outer WHERE), so its bound values must be repeated to match, in
+    // the same order each time.
     final results = await _dbHelper.rawQuery('''
-      SELECT 
+      SELECT
         COUNT(*) as totalEntries,
         MIN(weight) as minWeight,
         MAX(weight) as maxWeight,
@@ -105,7 +125,7 @@ class WeightRepository {
         (SELECT weight FROM weight_entries WHERE $whereClause ORDER BY date DESC LIMIT 1) as lastWeight
       FROM weight_entries
       WHERE $whereClause
-    ''', whereArgs);
+    ''', [...whereArgs, ...whereArgs, ...whereArgs]);
 
     if (results.isEmpty) return {};
     

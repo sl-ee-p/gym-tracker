@@ -4,6 +4,10 @@ import '../providers/progress_provider.dart';
 import '../providers/user_provider.dart';
 import '../services/weight_repository.dart';
 import '../models/weight_entry.dart';
+import '../widgets/app_overflow_menu.dart';
+import '../utils/app_date.dart';
+import '../utils/weight_format.dart';
+import 'measurements_tab.dart';
 
 class WeightTrackingScreen extends StatefulWidget {
   const WeightTrackingScreen({super.key});
@@ -61,11 +65,30 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Weight Tracking'),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Body Tracking'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Weight'),
+              Tab(text: 'Measurements'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildWeightTab(context),
+            const MeasurementsTab(),
+          ],
+        ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildWeightTab(BuildContext context) {
+    return Column(
         children: [
           // Add Weight Section
           Card(
@@ -88,6 +111,7 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                             child: TextField(
                               controller: _weightController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: const [DecimalWeightInputFormatter()],
                               decoration: InputDecoration(
                                 labelText: 'Weight',
                                 suffixText: userProvider.weightUnit,
@@ -97,7 +121,7 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          ElevatedButton(
+                          FilledButton(
                             onPressed: () => _addWeightEntry(),
                             child: const Text('Add'),
                           ),
@@ -170,11 +194,6 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: Consumer<UserProvider>(
                                     builder: (context, userProvider, child) {
-                                      final weightInUserUnit = entry.getWeightInUnit(
-                                        userProvider.weightUnit,
-                                        'kg', // Assuming entries are stored in kg
-                                      );
-                                      
                                       return ListTile(
                                         isThreeLine:
                                             entry.notes != null && entry.notes!.isNotEmpty,
@@ -186,7 +205,8 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                                           ),
                                         ),
                                         title: Text(
-                                          '${weightInUserUnit.toStringAsFixed(1)} ${userProvider.weightUnit}',
+                                          formatWeight(entry.weight,
+                                              unit: userProvider.weightUnit),
                                           style: Theme.of(context).textTheme.titleMedium,
                                         ),
                                         subtitle: Column(
@@ -205,22 +225,21 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                                               ),
                                           ],
                                         ),
-                                        trailing: PopupMenuButton<String>(
-                                          onSelected: (value) async {
-                                            if (value == 'edit') {
-                                              _editWeightEntry(entry);
-                                            } else if (value == 'delete') {
-                                              _deleteWeightEntry(entry);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
-                                              value: 'edit',
-                                              child: Text('Edit'),
+                                        trailing: AppOverflowMenu(
+                                          tooltip: 'Entry options',
+                                          items: [
+                                            AppMenuItem(
+                                              label: 'Edit',
+                                              icon: Icons.edit,
+                                              onSelected: () =>
+                                                  _editWeightEntry(entry),
                                             ),
-                                            const PopupMenuItem(
-                                              value: 'delete',
-                                              child: Text('Delete'),
+                                            AppMenuItem(
+                                              label: 'Delete',
+                                              icon: Icons.delete,
+                                              isDestructive: true,
+                                              onSelected: () =>
+                                                  _deleteWeightEntry(entry),
                                             ),
                                           ],
                                         ),
@@ -235,7 +254,6 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
                       ),
           ),
         ],
-      ),
     );
   }
 
@@ -247,8 +265,13 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
       return;
     }
 
-    final weight = double.tryParse(_weightController.text.trim());
-    if (weight == null || weight <= 0) {
+    final userProvider = context.read<UserProvider>();
+    // The field holds the display unit; storage is always kg.
+    final weightInKg = parseWeightToKg(
+      _weightController.text,
+      unit: userProvider.weightUnit,
+    );
+    if (weightInKg == null || weightInKg <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid weight')),
       );
@@ -256,13 +279,6 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
     }
 
     try {
-      final userProvider = context.read<UserProvider>();
-      
-      // Convert weight to kg for storage if needed
-      final weightInKg = userProvider.weightUnit == 'lbs' 
-          ? weight / 2.20462 
-          : weight;
-
       final entry = WeightEntry(
         weight: weightInKg,
         date: DateTime.now(),
@@ -274,11 +290,13 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
       await _weightRepository.insertWeightEntry(entry);
       await userProvider.updateCurrentWeight(weightInKg);
       await _refreshProgressData();
-      
+
+      if (!mounted) return;
+
       // Clear inputs
       _weightController.clear();
       _notesController.clear();
-      
+
       // Reload entries
       await _loadWeightEntries();
       
@@ -298,13 +316,8 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
 
   Future<void> _editWeightEntry(WeightEntry entry) async {
     final userProvider = context.read<UserProvider>();
-    final entryWeightInUserUnit = entry.getWeightInUnit(
-      userProvider.weightUnit,
-      'kg',
-    );
-
     final editWeightController = TextEditingController(
-      text: entryWeightInUserUnit.toStringAsFixed(1),
+      text: formatWeightValue(entry.weight, unit: userProvider.weightUnit),
     );
     final editNotesController = TextEditingController(text: entry.notes ?? '');
 
@@ -318,6 +331,7 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
             TextField(
               controller: editWeightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [DecimalWeightInputFormatter()],
               decoration: InputDecoration(
                 labelText: 'Weight',
                 suffixText: userProvider.weightUnit,
@@ -340,7 +354,7 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Save'),
           ),
@@ -354,8 +368,11 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
       return;
     }
 
-    final parsedWeight = double.tryParse(editWeightController.text.trim());
-    if (parsedWeight == null || parsedWeight <= 0) {
+    final weightInKg = parseWeightToKg(
+      editWeightController.text,
+      unit: userProvider.weightUnit,
+    );
+    if (weightInKg == null || weightInKg <= 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter a valid weight')),
@@ -365,10 +382,6 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
       editNotesController.dispose();
       return;
     }
-
-    final weightInKg = userProvider.weightUnit == 'lbs'
-        ? parsedWeight / 2.20462
-        : parsedWeight;
 
     final updatedEntry = WeightEntry(
       id: entry.id,
@@ -413,9 +426,9 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
@@ -470,9 +483,11 @@ class _WeightTrackingScreenState extends State<WeightTrackingScreen> {
   }
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date).inDays;
-    
+    // daysBetween, not today.difference(entryDate).inDays: two local
+    // midnights are 23 or 25 hours apart across a DST transition, so the
+    // truncating division silently reported "Yesterday" for today.
+    final difference = daysBetween(date, DateTime.now());
+
     if (difference == 0) {
       return 'Today at ${_formatTime(date)}';
     } else if (difference == 1) {

@@ -35,10 +35,50 @@ class ExerciseRepository {
   }
 
   Future<int> deleteCategory(int id) async {
+    // Exercises reference categories with no ON DELETE cascade/set-null and
+    // no FK enforcement, so deleting a category that still has exercises
+    // would otherwise leave them as orphaned rows pointing at a category
+    // that no longer exists. Block instead of cascading — cascading would
+    // also destroy any exercise_sets history logged against those
+    // exercises, which is exactly the kind of data loss this app must
+    // avoid.
+    final exercisesInCategory = await _dbHelper.query(
+      'exercises',
+      where: 'categoryId = ?',
+      whereArgs: [id],
+    );
+    if (exercisesInCategory.isNotEmpty) {
+      throw StateError(
+        'Cannot delete category: ${exercisesInCategory.length} exercise(s) '
+        'still use it. Reassign or delete those exercises first.',
+      );
+    }
+
     return await _dbHelper.delete(
       'exercise_categories',
       where: 'id = ?',
       whereArgs: [id],
+    );
+  }
+
+  /// How many exercises currently sit in [categoryId].
+  Future<int> countExercisesInCategory(int categoryId) async {
+    final rows = await _dbHelper.rawQuery(
+      'SELECT COUNT(*) as count FROM exercises WHERE categoryId = ?',
+      [categoryId],
+    );
+    return (rows.first['count'] as num?)?.toInt() ?? 0;
+  }
+
+  /// Moves every exercise in [fromCategoryId] into [toCategoryId].
+  ///
+  /// The escape hatch for [deleteCategory]'s refusal: a category you no longer
+  /// want shouldn't force you to delete the exercises in it, which would
+  /// orphan their whole logged history.
+  Future<int> reassignExercises(int fromCategoryId, int toCategoryId) async {
+    return await _dbHelper.rawUpdate(
+      'UPDATE exercises SET categoryId = ? WHERE categoryId = ?',
+      [toCategoryId, fromCategoryId],
     );
   }
 
@@ -63,16 +103,6 @@ class ExerciseRepository {
     return Exercise.fromMap(maps.first);
   }
 
-  Future<List<Exercise>> searchExercises(String query) async {
-    final maps = await _dbHelper.query(
-      'exercises',
-      where: 'name LIKE ? OR muscleGroups LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
-      orderBy: 'name',
-    );
-    return maps.map((map) => Exercise.fromMap(map)).toList();
-  }
-
   Future<int> insertExercise(Exercise exercise) async {
     return await _dbHelper.insert('exercises', exercise.toMap());
   }
@@ -92,6 +122,11 @@ class ExerciseRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<int> setFavorite(int exerciseId, bool isFavorite) async {
+    return await _dbHelper.update('exercises', {'isFavorite': isFavorite ? 1 : 0},
+        where: 'id = ?', whereArgs: [exerciseId]);
   }
 
   // Get exercises with category information

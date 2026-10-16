@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/workout_session.dart';
+import '../providers/user_provider.dart';
 import '../providers/workout_provider.dart';
+import '../utils/weight_format.dart';
 import 'workout_detail_screen.dart';
+import '../utils/app_date.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {
   const WorkoutHistoryScreen({super.key});
@@ -12,6 +15,11 @@ class WorkoutHistoryScreen extends StatefulWidget {
 }
 
 class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
+
+  /// The display unit for every weight this screen renders. Stored weights
+  /// are always kg; formatWeight converts before formatting.
+  String get weightUnit => context.watch<UserProvider>().weightUnit;
+
   @override
   void initState() {
     super.initState();
@@ -187,7 +195,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${stats['volume'].toStringAsFixed(1)} kg total',
+                    '${formatWeight(stats['volume'] as double, unit: weightUnit)} total',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -198,7 +206,21 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
             ],
           ],
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.replay),
+              tooltip: (stats['exercises'] as int) > 0
+                  ? 'Repeat workout'
+                  : 'No exercises to repeat',
+              onPressed: (stats['exercises'] as int) > 0
+                  ? () => repeatPastWorkout(context, workout)
+                  : null,
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: () => _navigateToWorkoutDetail(workout),
       ),
     );
@@ -230,14 +252,16 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   }
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    
-    if (difference.inDays == 0) {
+    // daysBetween, not today.difference(entryDate).inDays: two local
+    // midnights are 23 or 25 hours apart across a DST transition, so the
+    // truncating division silently reported "Yesterday" for today.
+    final difference = daysBetween(date, DateTime.now());
+
+    if (difference == 0) {
       return 'Today ${_formatTime(date)}';
-    } else if (difference.inDays == 1) {
+    } else if (difference == 1) {
       return 'Yesterday ${_formatTime(date)}';
-    } else if (difference.inDays < 7) {
+    } else if (difference < 7) {
       final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       return '${weekdays[date.weekday - 1]} ${_formatTime(date)}';
     } else {
