@@ -16,7 +16,7 @@ class ExerciseCategory {
   Color get color => Color(colorValue);
   
   set color(Color newColor) {
-    colorValue = newColor.value;
+    colorValue = newColor.toARGB32();
   }
   
   Map<String, dynamic> toMap() {

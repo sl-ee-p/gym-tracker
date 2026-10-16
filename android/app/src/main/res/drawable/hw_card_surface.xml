@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's card. Tinted at runtime by HeatmapWidgetProvider with the
+     app's own Card colour, so the solid below is only the cold-start
+     fallback — before the app has ever saved a theme. It has a -night
+     variant for exactly that case.
+
+     16dp corners match AppRadius.lg, i.e. the dashboard card this mirrors. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="16dp" />
+    <solid android:color="@color/hw_card_surface_default" />
+</shape>

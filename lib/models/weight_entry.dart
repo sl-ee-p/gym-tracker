@@ -46,17 +46,4 @@ class WeightEntry {
   String getFormattedWeight(String unit) {
     return '${weight.toStringAsFixed(1)} $unit';
   }
-  
-  // Convert between kg and lbs
-  double getWeightInUnit(String targetUnit, String currentUnit) {
-    if (targetUnit == currentUnit) return weight;
-    
-    if (currentUnit == 'kg' && targetUnit == 'lbs') {
-      return weight * 2.20462;
-    } else if (currentUnit == 'lbs' && targetUnit == 'kg') {
-      return weight / 2.20462;
-    }
-    
-    return weight;
-  }
 }

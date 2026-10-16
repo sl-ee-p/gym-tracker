@@ -1,4 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Only used by media_store_plus's pre-scoped-storage fallback (Android
+         9 and below); ignored by the OS on Android 10+, which saves
+         exported data to Downloads via MediaStore instead. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Rest-timer alert while the app is backgrounded. SCHEDULE_EXACT_ALARM
+         rather than USE_EXACT_ALARM: the latter is auto-granted but Play
+         restricts it to alarm-clock/calendar apps and would flag a gym
+         tracker. This one is user-grantable, so denial has to degrade to an
+         inexact alarm — see NotificationService. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <application
         android:label="Gym Tracker"
         android:name="${applicationName}"
@@ -25,6 +41,45 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Home-screen heatmap widget. exported="false" is correct: both the
+             system's APPWIDGET_UPDATE broadcast and home_widget's own
+             updateWidget set the component explicitly. -->
+        <receiver
+            android:name=".HeatmapWidgetProvider"
+            android:exported="false"
+            android:label="@string/hw_heatmap_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/hw_heatmap_widget_info" />
+        </receiver>
+
+        <!-- Delivers taps on the ongoing rest notification's buttons. Without
+             it the buttons render but nothing is ever dispatched. It always
+             spins up its own short-lived FlutterEngine, so the handler runs on
+             a background isolate and hands the action to the live app over a
+             named SendPort — see NotificationService. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
+
+        <!-- flutter_local_notifications' scheduling receivers. The boot one
+             re-registers pending alarms after a restart or an app update. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

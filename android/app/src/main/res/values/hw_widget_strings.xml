@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Its own file, not strings.xml/styles.xml/colors.xml: flutter_native_splash
+     and flutter_launcher_icons regenerate those wholesale, and the hw_ prefix
+     keeps every widget resource out of their way. -->
+<resources>
+    <string name="hw_heatmap_label">Training consistency</string>
+    <string name="hw_heatmap_description">Your weekly goal and the last 12 weeks of workouts.</string>
+    <string name="hw_heatmap_placeholder">Open Gym Tracker to load your progress</string>
+</resources>

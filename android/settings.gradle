@@ -18,8 +18,18 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.1.0" apply false
-    id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+    // AGP 9.1.0 / KGP 2.4.0 / Gradle 9.3.1 are the versions the Flutter 3.47
+    // template ships, so they are the combination this Flutter version is
+    // actually tested against. Flutter hard-errors below AGP 8.11.1 and warns
+    // below 9.0.1 (see DependencyVersionChecker.kt in flutter_tools).
+    //
+    // The old note here said Kotlin had to be >=1.9 so the app module could
+    // subclass home_widget's HomeWidgetProvider without an
+    // incompatible-metadata error. Still true, and comfortably satisfied —
+    // Kotlin reads older metadata forward, so 2.4.0 against home_widget's
+    // 1.9-compiled classes is fine.
+    id "com.android.application" version "9.1.0" apply false
+    id "org.jetbrains.kotlin.android" version "2.4.0" apply false
 }
 
 include ":app"

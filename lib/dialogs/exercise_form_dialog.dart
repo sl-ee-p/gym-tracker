@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/exercise.dart';
 import '../providers/exercise_provider.dart';
+import '../providers/user_provider.dart';
+import '../theme/app_theme.dart';
+import '../utils/weight_format.dart';
 
 class ExerciseFormDialog extends StatefulWidget {
   final Exercise? exercise; // null for add, non-null for edit
@@ -18,11 +21,13 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   final _nameController = TextEditingController();
   final _instructionsController = TextEditingController();
   final _muscleGroupsController = TextEditingController();
-  
+  final _barWeightController = TextEditingController();
+
   int? _selectedCategoryId;
   bool _isWeightBased = true;
   bool _isTimeBased = false;
   bool _isRepsBased = true;
+  bool _usesPlateCalculator = false;
   bool _isLoading = false;
 
   @override
@@ -38,6 +43,15 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       _isWeightBased = widget.exercise!.isWeightBased;
       _isTimeBased = widget.exercise!.isTimeBased;
       _isRepsBased = widget.exercise!.isRepsBased;
+      _usesPlateCalculator = widget.exercise!.usesPlateCalculator;
+      // Shown in the display unit; converted back to kg on save.
+      final barWeightKg = widget.exercise!.barWeightKg;
+      if (barWeightKg != null) {
+        _barWeightController.text = formatWeightValue(
+          barWeightKg,
+          unit: context.read<UserProvider>().weightUnit,
+        );
+      }
     } else if (widget.initialName != null && widget.initialName!.trim().isNotEmpty) {
       _nameController.text = widget.initialName!.trim();
     }
@@ -48,6 +62,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     _nameController.dispose();
     _instructionsController.dispose();
     _muscleGroupsController.dispose();
+    _barWeightController.dispose();
     super.dispose();
   }
 
@@ -64,6 +79,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
+              // So a duplicate name is called out while typing rather than
+              // only after tapping Save.
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -94,8 +112,19 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                         prefixIcon: Icon(Icons.fitness_center),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final name = value?.trim() ?? '';
+                        if (name.isEmpty) {
                           return 'Please enter an exercise name';
+                        }
+                        // excludingId is null when adding, and the exercise's
+                        // own id when editing — so renaming an exercise to
+                        // the name it already has still validates.
+                        final clash = exerciseProvider.findByName(
+                          name,
+                          excludingId: widget.exercise?.id,
+                        );
+                        if (clash != null) {
+                          return '"${clash.name}" already exists';
                         }
                         return null;
                       },
@@ -211,7 +240,52 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                       },
                       contentPadding: EdgeInsets.zero,
                     ),
-                    
+
+                    // Only meaningful for a weight-based exercise, and only
+                    // worth offering on movements actually loaded with plates
+                    // — on a machine or a dumbbell press the calculator is
+                    // just an extra icon in the weight field.
+                    if (_isWeightBased) ...[
+                      SwitchListTile(
+                        title: const Text('Loaded with plates'),
+                        subtitle: const Text('Show the plate calculator'),
+                        value: _usesPlateCalculator,
+                        onChanged: (value) {
+                          setState(() {
+                            _usesPlateCalculator = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      if (_usesPlateCalculator) ...[
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _barWeightController,
+                          decoration: InputDecoration(
+                            labelText: 'Bar weight',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.straighten),
+                            suffixText: context.watch<UserProvider>().weightUnit,
+                            helperText: 'Leave empty to use the default bar',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: const [DecimalWeightInputFormatter()],
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return null; // empty means "use the default"
+                            }
+                            final unit = context.read<UserProvider>().weightUnit;
+                            final parsed = parseWeightToKg(value, unit: unit);
+                            if (parsed == null || parsed <= 0) {
+                              return 'Enter a positive weight, or leave empty';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ],
+
                     const SizedBox(height: 24),
 
                     // Action Buttons
@@ -225,7 +299,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: ElevatedButton(
+                          child: FilledButton(
                             onPressed: _isLoading ? null : _saveExercise,
                             child: _isLoading
                                 ? const SizedBox(
@@ -255,13 +329,31 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       return;
     }
 
+    if (!_isWeightBased && !_isTimeBased && !_isRepsBased) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enable at least one of Weight-based, Time-based or Reps-based'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       final exerciseProvider = context.read<ExerciseProvider>();
-      
+      final unit = context.read<UserProvider>().weightUnit;
+
+      // Turning off "loaded with plates" also drops any saved bar weight,
+      // so re-enabling it later starts from the global default rather than a
+      // stale number the user can no longer see.
+      final usesPlates = _isWeightBased && _usesPlateCalculator;
+      final barWeightKg = usesPlates
+          ? parseWeightToKg(_barWeightController.text, unit: unit)
+          : null;
+
       // Parse muscle groups
       final muscleGroups = _muscleGroupsController.text
           .split(',')
@@ -281,6 +373,8 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
           isWeightBased: _isWeightBased,
           isTimeBased: _isTimeBased,
           isRepsBased: _isRepsBased,
+          usesPlateCalculator: usesPlates,
+          barWeightKg: barWeightKg,
         );
         
         await exerciseProvider.addExercise(newExercise);
@@ -296,6 +390,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
           isWeightBased: _isWeightBased,
           isTimeBased: _isTimeBased,
           isRepsBased: _isRepsBased,
+          usesPlateCalculator: usesPlates,
+          barWeightKg: barWeightKg,
+          clearBarWeight: barWeightKg == null,
         );
         
         await exerciseProvider.updateExercise(updatedExercise);
@@ -311,7 +408,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                   ? 'Exercise added successfully' 
                   : 'Exercise updated successfully',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: context.semanticColors.success,
           ),
         );
       }
@@ -319,8 +416,12 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            // DuplicateExerciseNameException already reads as a sentence; an
+            // "Error:" prefix would only make it worse.
+            content: Text(e is DuplicateExerciseNameException
+                ? e.toString()
+                : 'Error: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The card is native; the content is a PNG rendered in Dart.
+
+     Splitting it that way is what makes the widget fill its box. The bitmap
+     has one fixed aspect ratio and the launcher cell does not, so a card
+     drawn *into* the PNG could only ever be letterboxed — floating in the
+     middle of the box with wallpaper above and below it. Here the two
+     background layers are match_parent, so the rounded card always fits the
+     box exactly, and the content image is centred on transparency inside it.
+
+     hw_background and hw_border are separate views because a RemoteViews
+     colour filter applies to a whole drawable: the fill and the 1dp stroke
+     are different colours and so need a layer each. HeatmapWidgetProvider
+     tints both with the app's live theme.
+
+     Exactly one of hw_image / hw_placeholder is visible at a time; the
+     provider decides which. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hw_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- scaleType is fitXY deliberately: a <shape> has no intrinsic size, so
+         ImageView stretches its *bounds* to the view rather than scaling a
+         bitmap. The 16dp corners stay circular. -->
+    <ImageView
+        android:id="@+id/hw_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:src="@drawable/hw_card_surface"
+        android:importantForAccessibility="no" />
+
+    <ImageView
+        android:id="@+id/hw_border"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:src="@drawable/hw_card_border"
+        android:importantForAccessibility="no" />
+
+    <ImageView
+        android:id="@+id/hw_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="@string/hw_heatmap_label" />
+
+    <TextView
+        android:id="@+id/hw_placeholder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:gravity="center"
+        android:textColor="@color/hw_card_text_default"
+        android:textSize="13sp"
+        android:text="@string/hw_heatmap_placeholder" />
+</FrameLayout>

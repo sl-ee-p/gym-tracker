@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget showing the weekly goal and the training-consistency
+     heatmap.
+
+     updatePeriodMillis="0" is deliberate. Anything below 30 minutes is
+     clamped by the system anyway, and polling would buy nothing here: the
+     provider runs in the app's process with no Flutter engine, so it can only
+     re-blit the PNG that already exists. Updates are pushed from Dart when a
+     workout is completed, when the app resumes, and when the platform
+     brightness changes — see MyApp.didChangeAppLifecycleState.
+
+     minResizeWidth is 250dp rather than the launcher's floor: the content is
+     a fixed-size bitmap scaled with fitCenter, so a narrower box does not
+     reflow the layout, it shrinks 9px label text to illegibility. Height is
+     free to go lower — the image just letterboxes against the native card,
+     which always fills the box. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="250dp"
+    android:minResizeHeight="100dp"
+    android:maxResizeWidth="420dp"
+    android:maxResizeHeight="200dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:description="@string/hw_heatmap_description"
+    android:initialLayout="@layout/hw_heatmap_widget"
+    android:previewLayout="@layout/hw_heatmap_widget"
+    android:previewImage="@mipmap/ic_launcher" />

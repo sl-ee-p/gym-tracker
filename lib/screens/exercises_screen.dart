@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/exercise_provider.dart';
 import '../dialogs/exercise_form_dialog.dart';
+import '../widgets/app_overflow_menu.dart';
+import 'exercise_details_screen.dart';
+import 'muscle_map_screen.dart';
 
 class ExercisesScreen extends StatefulWidget {
   const ExercisesScreen({super.key});
@@ -11,11 +14,30 @@ class ExercisesScreen extends StatefulWidget {
 }
 
 class _ExercisesScreenState extends State<ExercisesScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercises'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.accessibility_new),
+            tooltip: 'Muscle map',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MuscleMapScreen()),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(120),
           child: Column(
@@ -26,6 +48,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                 child: Consumer<ExerciseProvider>(
                   builder: (context, exerciseProvider, child) {
                     return TextField(
+                      controller: _searchController,
                       onChanged: exerciseProvider.setSearchQuery,
                       decoration: InputDecoration(
                         hintText: 'Search exercises...',
@@ -33,7 +56,10 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         suffixIcon: exerciseProvider.searchQuery.isNotEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.clear),
-                                onPressed: () => exerciseProvider.setSearchQuery(''),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  exerciseProvider.setSearchQuery('');
+                                },
                               )
                             : null,
                         border: OutlineInputBorder(
@@ -83,8 +109,8 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                                 selected ? category.id : null,
                               );
                             },
-                            backgroundColor: Color(category.colorValue).withOpacity(0.1),
-                            selectedColor: Color(category.colorValue).withOpacity(0.3),
+                            backgroundColor: Color(category.colorValue).withValues(alpha: 0.1),
+                            selectedColor: Color(category.colorValue).withValues(alpha: 0.3),
                           ),
                         );
                       },
@@ -133,8 +159,11 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                   if (exerciseProvider.searchQuery.isNotEmpty || 
                       exerciseProvider.selectedCategoryId != null) ...[
                     const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => exerciseProvider.clearFilters(),
+                    FilledButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        exerciseProvider.clearFilters();
+                      },
                       child: const Text('Clear Filters'),
                     ),
                   ],
@@ -155,7 +184,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: category != null 
-                        ? Color(category.colorValue).withOpacity(0.2)
+                        ? Color(category.colorValue).withValues(alpha: 0.2)
                         : Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Icon(
                       Icons.fitness_center,
@@ -178,22 +207,36 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         ),
                     ],
                   ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        _editExercise(exercise.id!);
-                      } else if (value == 'delete') {
-                        _deleteExercise(exercise.id!);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          exercise.isFavorite ? Icons.star : Icons.star_border,
+                          color: exercise.isFavorite
+                              ? Colors.amber
+                              : Theme.of(context).colorScheme.outline,
+                        ),
+                        tooltip: exercise.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                        onPressed: () => context
+                            .read<ExerciseProvider>()
+                            .setFavorite(exercise.id!, !exercise.isFavorite),
                       ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete'),
+                      AppOverflowMenu(
+                        tooltip: 'Exercise options',
+                        items: [
+                          AppMenuItem(
+                            label: 'Edit',
+                            icon: Icons.edit,
+                            onSelected: () => _editExercise(exercise.id!),
+                          ),
+                          AppMenuItem(
+                            label: 'Delete',
+                            icon: Icons.delete,
+                            isDestructive: true,
+                            onSelected: () => _deleteExercise(exercise.id!),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -213,61 +256,11 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   }
 
   void _viewExerciseDetails(int exerciseId) {
-    final exerciseProvider = context.read<ExerciseProvider>();
-    final exercise = exerciseProvider.getExerciseById(exerciseId);
-    
-    if (exercise == null) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(exercise.name),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (exercise.instructions != null) ...[
-                const Text('Instructions:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(exercise.instructions!),
-                const SizedBox(height: 16),
-              ],
-              if (exercise.muscleGroups.isNotEmpty) ...[
-                const Text('Muscle Groups:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(exercise.muscleGroups.join(', ')),
-                const SizedBox(height: 16),
-              ],
-              const Text('Exercise Type:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  if (exercise.isWeightBased) 
-                    Chip(label: Text('Weight-based'), backgroundColor: Colors.blue.withOpacity(0.2)),
-                  if (exercise.isRepsBased)
-                    Chip(label: Text('Reps-based'), backgroundColor: Colors.green.withOpacity(0.2)),
-                  if (exercise.isTimeBased)
-                    Chip(label: Text('Time-based'), backgroundColor: Colors.orange.withOpacity(0.2)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _editExercise(exerciseId);
-            },
-            child: const Text('Edit'),
-          ),
-        ],
+    // The id, not the row: ExerciseDetailsScreen re-reads it from the provider
+    // on every build so an edit made there repaints its own muscle diagram.
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExerciseDetailsScreen(exerciseId: exerciseId),
       ),
     );
   }
@@ -300,9 +293,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),

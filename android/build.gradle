@@ -5,6 +5,48 @@ allprojects {
     }
 }
 
+// Raise any plugin module still compiling against an SDK older than the app's.
+//
+// media_store_plus 0.1.3 hardcodes `compileSdkVersion 33`, while the AndroidX
+// artifacts it depends on (fragment 1.7.1, lifecycle-process 2.7.0, and 13
+// others) now require their consumers to compile against 34+. That fails
+// :media_store_plus:checkDebugAarMetadata. 0.1.3 is the newest release on
+// pub.dev and the plugin looks unmaintained, so there is no upgrade to take
+// and no upstream fix to wait for.
+//
+// Safe by construction: compileSdk only widens the set of APIs available at
+// compile time. Runtime behaviour is governed by targetSdk, and installability
+// by minSdk — neither is touched here.
+//
+// Written as a floor rather than an assignment so it cannot silently downgrade
+// a plugin that already asks for something newer than the app.
+//
+// Placement: this must stay above the `evaluationDependsOn(":app")` block below.
+// That block forces each subproject to evaluate eagerly, and registering an
+// afterEvaluate callback on an already-evaluated project is an error
+// ("Cannot run Project.afterEvaluate(Closure) when the project is already
+// evaluated"). Registering here also means this callback runs before AGP's own
+// afterEvaluate, so the value is in place before variants are created.
+subprojects {
+    afterEvaluate { subproject ->
+        if (subproject.hasProperty("android")) {
+            def current = null
+            try {
+                current = subproject.android.compileSdk
+            } catch (Exception ignored) {
+                // Older AGP DSLs expose only the string form; treat as unknown
+                // and leave the module alone rather than guessing.
+            }
+            if (current instanceof Integer && current < 36) {
+                subproject.android.compileSdk = 36
+                logger.lifecycle(
+                    "Raised :${subproject.name} compileSdk ${current} -> 36 " +
+                    "(see android/build.gradle)")
+            }
+        }
+    }
+}
+
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"

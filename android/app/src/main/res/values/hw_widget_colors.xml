@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cold-start fallbacks for the widget card, used only until the app has
+     saved its resolved theme colours (see HomeWidgetService). Approximations
+     of AppTheme.light()'s surfaceContainerLow and outlineVariant for the
+     default petrol seed — close enough that the placeholder state does not
+     flash a wrong-brightness card.
+
+     Its own file, not colors.xml: flutter_native_splash regenerates that one
+     wholesale, and the hw_ prefix keeps every widget resource out of its way. -->
+<resources>
+    <color name="hw_card_surface_default">#FFF4F5F5</color>
+    <color name="hw_card_border_default">#99C0C8C8</color>
+    <color name="hw_card_text_default">#FF3F4949</color>
+</resources>

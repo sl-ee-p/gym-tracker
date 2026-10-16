@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark cold-start fallbacks — see values/hw_widget_colors.xml. Note these
+     follow the *system* theme, while the rendered image follows the app's own
+     setting; they only ever show before the first render, when there is no
+     app setting to follow yet. -->
+<resources>
+    <color name="hw_card_surface_default">#FF191D1E</color>
+    <color name="hw_card_border_default">#993F4949</color>
+    <color name="hw_card_text_default">#FFBEC8C8</color>
+</resources>

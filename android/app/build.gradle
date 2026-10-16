@@ -13,10 +13,16 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.gym_app"
-    compileSdk = 34
+    // 36 because flutter_local_notifications 22.x compiles against it. This
+    // is compile-time only and does not change runtime behaviour; see
+    // targetSdk below.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Still required by flutter_local_notifications: it uses java.time,
+        // which was added in API 26, and minSdk here is 24.
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -30,15 +36,25 @@ android {
         applicationId = "com.example.gym_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21
+        // 24, up from 21: flutter_local_notifications 22.x declares
+        // minSdkVersion 24 in its own manifest, so the manifest merge fails
+        // below that. The cost is dropping Android 5.0/5.1 (API 21-23).
+        minSdk = 24
+        // Deliberately left at 34 while compileSdk moves to 36. Raising
+        // targetSdk opts the app into Android 15/16 behaviour changes —
+        // notably enforced edge-to-edge, which would need a real layout pass
+        // over every screen. That is its own piece of work, not a side effect
+        // of adding a muscle map.
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    packagingOptions {
-        pickFirst '**/libc++_shared.so'
-        pickFirst '**/libjsc.so'
+    // `packagingOptions` was removed in AGP 9; same two rules, new block.
+    packaging {
+        jniLibs {
+            pickFirsts += ['**/libc++_shared.so', '**/libjsc.so']
+        }
     }
 
     signingConfigs {
@@ -65,6 +81,15 @@ android {
             shrinkResources = false
         }
     }
+}
+
+dependencies {
+    // Floor set by flutter_local_notifications, which fails
+    // :app:checkDebugAarMetadata below 2.1.4 ("requires desugar_jdk_libs
+    // version to be 2.1.4 or above"). Was 2.0.4 for v18 of that plugin, and
+    // 1.2.x before that — the version its README still shows, which fails on
+    // AGP 8 entirely.
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
 }
 
 flutter {
