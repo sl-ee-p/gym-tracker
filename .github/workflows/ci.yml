@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The database tests load the system sqlite library under the Dart VM.
+      - name: Install sqlite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      # Deprecation infos exist today; warnings and errors still fail the build.
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  android-build:
+    name: Android debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      # The committed gradle.properties pins a Windows JDK path; use the runner's JDK 17 instead.
+      - run: sed -i '/^org.gradle.java.home=/d' android/gradle.properties
+      - run: flutter build apk --debug
