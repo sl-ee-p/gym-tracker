@@ -49,4 +49,6 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # The committed gradle.properties pins a Windows JDK path; use the runner's JDK 17 instead.
+      - run: sed -i '/^org.gradle.java.home=/d' android/gradle.properties
       - run: flutter build apk --debug
