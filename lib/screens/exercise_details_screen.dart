@@ -7,6 +7,7 @@ import '../providers/exercise_provider.dart';
 import '../utils/app_spacing.dart';
 import '../utils/muscle_region_mapping.dart';
 import '../widgets/muscle_map_section.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// Everything known about one exercise, including the muscle map.
 ///
@@ -72,6 +73,7 @@ class ExerciseDetailsScreen extends StatelessWidget {
         final undrawable = undrawableMuscleGroups(exercise);
 
         return Scaffold(
+          bottomNavigationBar: const SystemNavBarSpacer(),
           appBar: AppBar(
             title: Text(exercise.name),
             actions: [

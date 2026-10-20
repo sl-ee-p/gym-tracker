@@ -1,4 +1,4 @@
-# Gym Tracker
+# PlateLog
 
 An offline-first workout tracker built with Flutter. Log exercises, sets and body weight, follow your progress with charts and analytics, and keep everything on your own device in a local SQLite database. No account, no server.
 
@@ -115,7 +115,7 @@ The schema is versioned. Each `_upgradeToVN` step is append-only and must never 
 
 ## Platform notes
 
-- Android `compileSdk` is 36, `minSdk` is 24, and `targetSdk` is deliberately kept at 34 to avoid Android 15/16 edge-to-edge changes.
+- Android `compileSdk` is 36, `minSdk` is 24, and `targetSdk` is 36 (Google Play's current minimum), so the app is edge-to-edge on Android 15+.
 - `android/build.gradle` raises every subproject's `compileSdk` to 36 because `media_store_plus` hardcodes an old value.
-- The Android application ID is `com.example.gym_app` and the iOS bundle ID is `com.example.gymApp`. Neither has been finalised.
+- The Android application ID is `com.slp.platelog` (permanent once published on Google Play). There is no `ios/` folder in this checkout yet; when one is added, give it a matching bundle ID.
 - The home-screen widget has no iOS equivalent.

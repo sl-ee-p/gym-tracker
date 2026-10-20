@@ -6,6 +6,7 @@ import '../providers/user_provider.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/workout_heatmap.dart';
 import '../widgets/workout_heatmap_card.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// The full-year view of the same data the dashboard card shows.
 ///
@@ -32,6 +33,7 @@ class _WorkoutHeatmapScreenState extends State<WorkoutHeatmapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(title: const Text('Training Consistency')),
       body: Consumer2<ProgressProvider, UserProvider>(
         builder: (context, progressProvider, userProvider, child) {

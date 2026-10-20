@@ -5,5 +5,5 @@
 <resources>
     <string name="hw_heatmap_label">Training consistency</string>
     <string name="hw_heatmap_description">Your weekly goal and the last 12 weeks of workouts.</string>
-    <string name="hw_heatmap_placeholder">Open Gym Tracker to load your progress</string>
+    <string name="hw_heatmap_placeholder">Open PlateLog to load your progress</string>
 </resources>

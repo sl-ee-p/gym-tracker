@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -77,9 +79,14 @@ class _WarmupSheetState extends State<_WarmupSheet> {
     final ramp = _ramp();
 
     return Padding(
-      // Lift above the keyboard: the field is the first thing focused.
-      padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg,
-          AppSpacing.lg + MediaQuery.viewInsetsOf(context).bottom),
+      // Lift above the keyboard (the field is the first thing focused), or
+      // above the navigation bar when the keyboard is closed (edge-to-edge).
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg +
+              math.max(MediaQuery.viewInsetsOf(context).bottom, MediaQuery.paddingOf(context).bottom)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

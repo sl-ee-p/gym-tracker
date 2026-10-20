@@ -22,6 +22,7 @@ import '../utils/weight_format.dart';
 import '../widgets/app_overflow_menu.dart';
 import '../widgets/hex_color_picker.dart';
 import 'categories_screen.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// What an export writes. [label] is the menu entry; [extension] and
 /// [description] feed the filename and the completion dialog.
@@ -84,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: const Text('Settings'),
       ),
@@ -674,7 +676,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: Text(
                           userProvider.autoBackupEnabled
                               ? (lastBackup == null
-                                  ? 'After each workout, to Downloads/GymTracker'
+                                  ? 'After each workout, to Downloads/PlateLog'
                                   : 'Last backup: ${_formatBackupTime(lastBackup)}')
                               : 'Off — only manual exports are written',
                         ),
@@ -857,7 +859,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       final databaseHelper = DatabaseHelper();
       final fileName =
-          'gym_tracker_${format.fileSuffix}_$timestamp.${format.extension}';
+          'platelog_${format.fileSuffix}_$timestamp.${format.extension}';
 
       // The PDF is bytes rather than text, so it takes the other
       // ExportService entry point; everything else is a string.
@@ -960,7 +962,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ({Map<String, dynamic> backup, BackupSummary summary}) picked;
     try {
       final file = await FilePicker.pickFile(
-        dialogTitle: 'Choose a Gym Tracker backup',
+        dialogTitle: 'Choose a PlateLog backup',
         // Any, not custom ['json']: several Android file providers label a
         // .json in Downloads as a generic binary and grey it out. The
         // contents are validated below instead.
@@ -1001,7 +1003,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text(
               'This replaces everything currently in the app, settings '
               'included. A copy of your current data is saved to '
-              'Downloads/GymTracker first.',
+              'Downloads/PlateLog first.',
             ),
           ],
         ),

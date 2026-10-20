@@ -122,7 +122,7 @@ class DashboardTab extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gym Tracker'),
+        title: const Text('PlateLog'),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),

@@ -5,6 +5,7 @@ import '../providers/exercise_provider.dart';
 import '../providers/workout_provider.dart';
 import 'template_editor_screen.dart';
 import 'workout_screen.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 class TemplatesScreen extends StatelessWidget {
   const TemplatesScreen({super.key});
@@ -12,6 +13,7 @@ class TemplatesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(title: const Text('Templates')),
       body: Consumer<WorkoutProvider>(
         builder: (context, workoutProvider, child) {

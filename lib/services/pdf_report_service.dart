@@ -49,8 +49,8 @@ class PdfReportService {
     }
 
     final document = pw.Document(
-      title: 'Gym Tracker — workout history',
-      author: 'Gym Tracker',
+      title: 'PlateLog — workout history',
+      author: 'PlateLog',
     );
 
     document.addPage(

@@ -6,6 +6,7 @@ import '../providers/workout_provider.dart';
 import '../utils/weight_format.dart';
 import 'workout_detail_screen.dart';
 import '../utils/app_date.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {
   const WorkoutHistoryScreen({super.key});
@@ -32,6 +33,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: const Text('Workout History'),
         actions: [
@@ -285,4 +287,4 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       return '${minutes}m';
     }
   }
-}
+}

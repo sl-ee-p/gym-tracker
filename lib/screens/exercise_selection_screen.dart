@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/exercise.dart';
 import '../providers/exercise_provider.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 class ExerciseSelectionScreen extends StatefulWidget {
   final List<int> excludeExerciseIds; // Exercises already in workout
@@ -74,6 +75,7 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: const Text('Select Exercise'),
         bottom: PreferredSize(
@@ -322,4 +324,4 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
   void _selectExercise(Exercise exercise) {
     Navigator.pop(context, exercise);
   }
-}
+}

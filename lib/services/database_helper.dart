@@ -648,7 +648,7 @@ class DatabaseHelper {
     if (decoded is! Map<String, dynamic> ||
         decoded['format'] != exportFormat) {
       throw const FormatException(
-          'This is not a Gym Tracker backup (JSON "Everything" export).');
+          'This is not a PlateLog backup (JSON "Everything" export).');
     }
     final version = decoded['schemaVersion'];
     if (version is! int) {

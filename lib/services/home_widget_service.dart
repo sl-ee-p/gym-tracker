@@ -30,7 +30,7 @@ class HomeWidgetService {
   /// `androidName` against the *applicationId*, which equals the namespace
   /// today but would silently break the day a flavour adds a suffix.
   static const String androidProvider =
-      'com.example.gym_app.HeatmapWidgetProvider';
+      'com.slp.platelog.HeatmapWidgetProvider';
 
   static final WorkoutRepository _workoutRepository = WorkoutRepository();
 

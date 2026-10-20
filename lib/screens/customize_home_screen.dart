@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/home_block.dart';
 import '../providers/user_provider.dart';
 import '../utils/app_spacing.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// Choose which dashboard sections appear, and in what order.
 ///
@@ -43,6 +44,7 @@ class _CustomizeHomeScreenState extends State<CustomizeHomeScreen> {
     final visibleCount = _layout.visible.length;
 
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: const Text('Customise Home'),
         actions: [

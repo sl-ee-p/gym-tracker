@@ -6,6 +6,7 @@ import '../utils/app_spacing.dart';
 import '../utils/muscle_region_mapping.dart';
 import '../widgets/exercise_picker_sheet.dart';
 import '../widgets/muscle_map_section.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// Browse the muscle map by exercise: pick a movement, see what it works.
 ///
@@ -38,6 +39,7 @@ class _MuscleMapScreenState extends State<MuscleMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(title: const Text('Muscle Map')),
       body: Consumer<ExerciseProvider>(
         builder: (context, exerciseProvider, child) {

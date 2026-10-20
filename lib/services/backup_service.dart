@@ -12,7 +12,7 @@ class BackupOutcome {
 
   final bool succeeded;
 
-  /// Human-readable destination, e.g. `Downloads/GymTracker/…`.
+  /// Human-readable destination, e.g. `Downloads/PlateLog/…`.
   final String? location;
 
   final String? error;
@@ -28,8 +28,8 @@ class BackupOutcome {
 class BackupService {
   const BackupService._();
 
-  static const jsonFileName = 'gym_tracker_auto_backup.json';
-  static const csvFileName = 'gym_tracker_auto_backup.csv';
+  static const jsonFileName = 'platelog_auto_backup.json';
+  static const csvFileName = 'platelog_auto_backup.csv';
 
   /// Never throws. A backup failing must not be able to fail the workout that
   /// triggered it — the previous implementation swallowed errors for that
@@ -83,7 +83,7 @@ class BackupService {
         .split('.')
         .first;
     return ExportService.exportToDownloads(
-      fileName: 'gym_tracker_pre_restore_$timestamp.json',
+      fileName: 'platelog_pre_restore_$timestamp.json',
       content: await DatabaseHelper().exportAllTablesAsJson(),
     );
   }

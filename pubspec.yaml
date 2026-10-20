@@ -1,5 +1,5 @@
 name: gym_app
-description: "A new Flutter project."
+description: "PlateLog: an offline-first workout tracker."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -138,15 +138,16 @@ dev_dependencies:
 # Flutter Launcher Icons configuration
 flutter_launcher_icons:
   android: "ic_launcher"
-  ios: true  
+  # No ios/ folder in this checkout yet; flip to true once it exists.
+  ios: false
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 24
-  web:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  windows:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#0B6E77"
+  # Artwork is already padded to the adaptive safe zone (tool/make_icon.py).
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icon/app_icon_monochrome.png"
+  remove_alpha_ios: true
 
 # Native Splash Screen configuration
 flutter_native_splash:

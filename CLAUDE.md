@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-gym_app is a Flutter workout-tracking app (SQLite-backed, offline-first, Android + iOS). It tracks exercises, workout sessions/sets, body weight, progress charts/analytics, and includes an Android home-screen heatmap widget and rest-timer notifications.
+PlateLog (Dart package `gym_app`, Android application ID `com.slp.platelog`) is a Flutter workout-tracking app (SQLite-backed, offline-first, Android + iOS). It tracks exercises, workout sessions/sets, body weight, progress charts/analytics, and includes an Android home-screen heatmap widget and rest-timer notifications.
 
 ## Commands
 
@@ -13,8 +13,8 @@ gym_app is a Flutter workout-tracking app (SQLite-backed, offline-first, Android
 - Static analysis: `flutter analyze`
 - Run full test suite: `flutter test`
 - Run a single test file: `flutter test test/path/to/file_test.dart`
-- Build Android release: `flutter build apk --release`
-- Regenerate launcher icons (after changing `assets/icon/app_icon.png`): `flutter pub run flutter_launcher_icons`
+- Build Android release (Play upload): `flutter build appbundle --release` → `build/app/outputs/bundle/release/app-release.aab`
+- Regenerate icons: edit and run `tool/make_icon.py` (needs Pillow + numpy), then `dart run flutter_launcher_icons` and `dart run flutter_native_splash:create`. `assets/icon/play_store_512.png` is the Play Store listing icon.
 
 No CI is configured — run `flutter analyze` and `flutter test` locally before considering a change done. There is no mocking library in the project; data-layer tests use real SQLite via `sqflite_common_ffi` instead of mocking the database.
 
@@ -34,15 +34,15 @@ Schema is versioned (`_databaseVersion`); `_onUpgrade` uses a chain of non-exclu
 
 ### Native platform integration
 
-- Android home-screen widget: `HomeWidgetService` (`lib/services/home_widget_service.dart`) renders the app's own heatmap painter off-tree to a PNG (`home_widget` package) and pushes it plus theme colors to `HeatmapWidgetProvider.kt` (`android/app/src/main/kotlin/com/example/gym_app/HeatmapWidgetProvider.kt`), which tints a native card around the bitmap. There is no iOS equivalent.
+- Android home-screen widget: `HomeWidgetService` (`lib/services/home_widget_service.dart`) renders the app's own heatmap painter off-tree to a PNG (`home_widget` package) and pushes it plus theme colors to `HeatmapWidgetProvider.kt` (`android/app/src/main/kotlin/com/slp/platelog/HeatmapWidgetProvider.kt`), which tints a native card around the bitmap. There is no iOS equivalent.
 - Rest timer notifications: `NotificationService` (`lib/services/notification_service.dart`) schedules an OS alarm for when the app is backgrounded and shows an ongoing, controllable notification (Pause/Resume/±15s). Background button taps run on a separate isolate with no app memory access and forward the action id via `IsolateNameServer`/`SendPort` back to the live isolate, where `main.dart` maps it onto `RestTimerController` calls. The same service schedules the weekly workout/weigh-in reminders (`syncReminders`, driven by `UserProvider`) as repeating wall-clock notifications, which is why `flutter_timezone` sets `tz.local` at init.
 - Personal records ("New best") use the rep rule in `lib/utils/personal_records.dart`: a set is a record if no earlier non-warm-up set had both ≥ weight and ≥ reps. The v8 migration has a frozen copy of that rule for its backfill; change the live rule there, never the migration.
 
 ### Constraints worth knowing before touching dependencies or Android build config
 
 - `flutter_body_atlas` (muscle map) sets the Flutter/Dart SDK floor (`flutter: ">=3.38.0"`, `sdk: ^3.13.2` in `pubspec.yaml`) — this is what pulled the whole Android toolchain forward (AGP, compileSdk, Kotlin/Java 17). Don't lower it without checking that package's requirement.
-- `android/build.gradle` forces every subproject's `compileSdk` up to a floor via an `afterEvaluate` hook, because `media_store_plus` hardcodes an old `compileSdkVersion`. `targetSdk` is deliberately kept below `compileSdk` to avoid Android 15/16 edge-to-edge behavior changes — don't "fix" that gap without checking why.
-- Android release builds currently fall back to debug signing (no `android/key.properties` in this checkout) — don't assume release APKs/AABs are properly signed.
+- `android/build.gradle` forces every subproject's `compileSdk` up to a floor via an `afterEvaluate` hook, because `media_store_plus` hardcodes an old `compileSdkVersion`. `targetSdk` is 36 (Google Play's floor), which enforces edge-to-edge on Android 15+: pushed screens pass `SystemNavBarSpacer` as `bottomNavigationBar` so content clears the system nav bar, and bottom sheets must pad by `MediaQuery.paddingOf(context).bottom` (or use `SafeArea`). Tab screens are covered by the shell's `NavigationBar`.
+- Release builds are signed with the upload key from `android/key.properties` + `android/app/upload-keystore.jks` (both gitignored; never commit them). Without those files the build silently falls back to debug signing, which Play rejects.
 
 ## Existing documentation
 

@@ -12,6 +12,7 @@ import '../utils/weight_format.dart';
 import '../widgets/exercise_sets_card.dart';
 import 'workout_screen.dart';
 import '../utils/app_date.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final WorkoutSession workout;
@@ -62,6 +63,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: Text(widget.workout.name ?? 'Workout Details'),
         actions: [

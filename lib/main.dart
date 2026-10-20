@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<UserProvider>(
         builder: (context, userProvider, child) {
           return MaterialApp(
-            title: 'Gym Tracker',
+            title: 'PlateLog',
             // Custom colours are stored per brightness, so light and dark can
             // be tuned independently — the same accent rarely works in both.
             // Null values fall through to AppTheme's built-in palette.
@@ -202,7 +202,7 @@ class _AppInitializerState extends State<AppInitializer>
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Loading Gym Tracker...'),
+              Text('Loading PlateLog...'),
             ],
           ),
         ),

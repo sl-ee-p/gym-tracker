@@ -6,6 +6,7 @@ import '../providers/exercise_provider.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/app_overflow_menu.dart';
 import '../widgets/hex_color_picker.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 /// Add, rename, recolour and delete exercise categories.
 ///
@@ -19,6 +20,7 @@ class CategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(title: const Text('Exercise Categories')),
       body: Consumer<ExerciseProvider>(
         builder: (context, exerciseProvider, child) {

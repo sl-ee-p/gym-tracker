@@ -355,8 +355,9 @@ class _MeasurementHistorySheetState extends State<_MeasurementHistorySheet> {
         }
         return ListView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+          // Clear the navigation bar too: edge-to-edge draws under it.
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg + MediaQuery.paddingOf(context).bottom),
           children: [
             Text(widget.type.label, style: theme.textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),

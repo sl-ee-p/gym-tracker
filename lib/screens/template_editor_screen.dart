@@ -4,6 +4,7 @@ import '../providers/exercise_provider.dart';
 import '../providers/workout_provider.dart';
 import '../widgets/app_overflow_menu.dart';
 import '../widgets/exercise_picker_sheet.dart';
+import '../widgets/system_nav_bar_spacer.dart';
 
 class TemplateEditorScreen extends StatefulWidget {
   const TemplateEditorScreen({super.key});
@@ -212,6 +213,7 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: const SystemNavBarSpacer(),
       appBar: AppBar(
         title: const Text('New Template'),
         actions: [

@@ -55,7 +55,7 @@ class ExportService {
       await writeTempFile(tempFile);
 
       await MediaStore.ensureInitialized();
-      MediaStore.appFolder = 'GymTracker';
+      MediaStore.appFolder = 'PlateLog';
       final saveInfo = await MediaStore().saveFile(
         tempFilePath: tempFile.path,
         dirType: DirType.download,
