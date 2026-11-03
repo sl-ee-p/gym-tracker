@@ -506,10 +506,13 @@ class NotificationService {
             // dies mid-rest, nothing is left to take the notification down and
             // the user cannot swipe it away, so the OS is asked to drop it on
             // its own. Every state change re-posts and so re-arms this, which
-            // is why a running rest can afford a tight grace period while a
+            // is why a running rest can use the exact remaining time while a
             // paused one — with no end time to reason from — gets an hour.
+            // No grace period: a chronometer keeps counting past zero (-0:30…)
+            // for as long as the notification stays up, so it must go the
+            // moment the rest ends, leaving the alert to announce it.
             timeoutAfter: running
-                ? (remaining + const Duration(minutes: 1)).inMilliseconds
+                ? remaining.inMilliseconds
                 : const Duration(hours: 1).inMilliseconds,
             actions: _restActions(running: running),
           ),
