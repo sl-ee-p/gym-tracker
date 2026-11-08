@@ -72,7 +72,10 @@ android {
             // Uses release keystore when key.properties is configured.
             // Falls back to debug signing so local release builds continue to work.
             signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
-            minifyEnabled = false
+            // R8 is what Play's DEX obfuscation score measures. Resource
+            // shrinking stays off: flutter_local_notifications resolves its
+            // icon and sound by name at runtime (getIdentifier).
+            minifyEnabled = true
             shrinkResources = false
         }
         debug {
