@@ -73,6 +73,11 @@ class NotificationService {
   static const String _channelDescription =
       'Alerts you when a rest period ends.';
 
+  // Separate channels because Android fixes a channel's sound when it is
+  // created: the sound setting can only choose which channel to post to.
+  static const String _silentChannelId = 'rest_timer_silent';
+  static const String _silentChannelName = 'Rest timer (silent)';
+
   static const String _ongoingChannelId = 'rest_timer_ongoing';
   static const String _ongoingChannelName = 'Rest timer controls';
   static const String _ongoingChannelDescription =
@@ -82,6 +87,9 @@ class NotificationService {
   static const String _reminderChannelName = 'Reminders';
   static const String _reminderChannelDescription =
       'Your weekly workout and weigh-in reminders.';
+
+  static const String _silentReminderChannelId = 'reminders_silent';
+  static const String _silentReminderChannelName = 'Reminders (silent)';
 
   /// Reminder ids are base + ISO weekday, so each weekday is its own
   /// repeating notification and can be cancelled on its own.
@@ -107,6 +115,10 @@ class NotificationService {
   /// Android 12/13 permission request opens a settings screen and returns
   /// immediately with the *old* value.
   bool _exactAlarmsAllowed = false;
+
+  /// Whether alerts scheduled from now on make a sound. Kept current by
+  /// UserProvider, since this service knows nothing about the profile.
+  bool soundEnabled = true;
 
   ReceivePort? _actionPort;
 
@@ -174,6 +186,17 @@ class NotificationService {
         ),
       );
 
+      await _android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _silentChannelId,
+          _silentChannelName,
+          description: _channelDescription,
+          importance: Importance.max,
+          playSound: false,
+          enableVibration: true,
+        ),
+      );
+
       // Low, silent, and separate from the alert channel above. This one is
       // re-posted on every pause, resume and ±15 s; on a max-importance
       // channel each of those would be a heads-up banner with an alarm sound.
@@ -197,6 +220,16 @@ class NotificationService {
           _reminderChannelName,
           description: _reminderChannelDescription,
           importance: Importance.defaultImportance,
+        ),
+      );
+
+      await _android?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _silentReminderChannelId,
+          _silentReminderChannelName,
+          description: _reminderChannelDescription,
+          importance: Importance.defaultImportance,
+          playSound: false,
         ),
       );
 
@@ -280,14 +313,18 @@ class NotificationService {
         body: body,
         scheduledDate: tz.TZDateTime(
             tz.local, next.year, next.month, next.day, next.hour, next.minute),
-        notificationDetails: const NotificationDetails(
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
-            _reminderChannelId,
-            _reminderChannelName,
+            soundEnabled ? _reminderChannelId : _silentReminderChannelId,
+            soundEnabled ? _reminderChannelName : _silentReminderChannelName,
             channelDescription: _reminderChannelDescription,
+            playSound: soundEnabled,
             autoCancel: true,
           ),
-          iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentSound: soundEnabled,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         // Repeats every week on this weekday at this local time.
@@ -393,16 +430,18 @@ class NotificationService {
         // happens to be. The zone would only matter for rendering a calendar
         // date, which this notification never does.
         scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
-        notificationDetails: const NotificationDetails(
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
+            soundEnabled ? _channelId : _silentChannelId,
+            soundEnabled ? _channelName : _silentChannelName,
             channelDescription: _channelDescription,
             importance: Importance.max,
             priority: Priority.high,
             category: AndroidNotificationCategory.alarm,
-            sound: RawResourceAndroidNotificationSound('timer_complete'),
-            playSound: true,
+            sound: soundEnabled
+                ? const RawResourceAndroidNotificationSound('timer_complete')
+                : null,
+            playSound: soundEnabled,
             enableVibration: true,
             autoCancel: true,
             visibility: NotificationVisibility.public,
@@ -410,7 +449,7 @@ class NotificationService {
           iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: false,
-            presentSound: true,
+            presentSound: soundEnabled,
             interruptionLevel: InterruptionLevel.timeSensitive,
           ),
         ),

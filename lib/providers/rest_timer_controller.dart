@@ -40,6 +40,10 @@ class AudioRestTimerAlerts implements RestTimerAlerts {
 abstract class RestTimerSettings {
   Duration read();
   Future<void> write(Duration duration);
+
+  /// Whether a finished rest may chime. The haptic is not covered: the switch
+  /// is about sound.
+  bool get soundEnabled;
 }
 
 /// The controller's two OS-notification outputs.
@@ -75,6 +79,8 @@ class _NoRestTimerSettings implements RestTimerSettings {
   Duration read() => RestTimerController.defaultDuration;
   @override
   Future<void> write(Duration duration) async {}
+  @override
+  bool get soundEnabled => true;
 }
 
 class _NoRestTimerScheduler implements RestTimerScheduler {
@@ -164,6 +170,12 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _isForeground = true;
 
+  /// A rest reached its end time while backgrounded, so the alarm armed for
+  /// that moment is firing or has just fired. Cancelling it now would pull
+  /// the "Rest complete" alert out of the shade, or stop it being posted.
+  /// Cleared on the way back to the app, where a stale alert should go.
+  bool _alarmAnnouncing = false;
+
   RestTimerPhase get phase => _phase;
   bool get isRunning => _phase == RestTimerPhase.running;
   bool get isPaused => _phase == RestTimerPhase.paused;
@@ -234,6 +246,7 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
     _endTime = _now().add(clamped);
     _phase = RestTimerPhase.running;
     _alertsFired = false;
+    _alarmAnnouncing = false;
     _startTicking();
     _afterMutation();
   }
@@ -305,6 +318,7 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
     _totalDuration = Duration.zero;
     _pausedRemaining = Duration.zero;
     _alertsFired = false;
+    _alarmAnnouncing = false;
   }
 
   void _startTicking() {
@@ -323,7 +337,11 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
 
     final left = remaining;
     if (left <= Duration.zero) {
-      _complete();
+      // Android often keeps ticking for a while after backgrounding. The
+      // alarm is the announcement there, so this must neither chime over it
+      // nor cancel it.
+      _alarmAnnouncing = !_isForeground;
+      _complete(silent: !_isForeground);
       return;
     }
 
@@ -344,7 +362,7 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_alertsFired && !silent) {
       _alertsFired = true;
       _alerts.haptic();
-      unawaited(_alerts.chime());
+      if (_settings.soundEnabled) unawaited(_alerts.chime());
     }
     _afterMutation();
   }
@@ -380,10 +398,14 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _syncNotification() async {
     final endTime = _endTime;
 
-    final alarm =
-        _phase == RestTimerPhase.running && !_isForeground && endTime != null
-            ? _scheduler.schedule(endTime)
-            : _scheduler.cancel();
+    final Future<void> alarm;
+    if (_phase == RestTimerPhase.running && !_isForeground && endTime != null) {
+      alarm = _scheduler.schedule(endTime);
+    } else if (_alarmAnnouncing) {
+      alarm = Future<void>.value();
+    } else {
+      alarm = _scheduler.cancel();
+    }
 
     final ongoing =
         (_phase == RestTimerPhase.running || _phase == RestTimerPhase.paused) &&
@@ -407,6 +429,7 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.resumed) {
       _isForeground = true;
+      _alarmAnnouncing = false;
       // No tick fired while we were away, so a rest that ended in the
       // meantime is only noticed here. Silent: the notification announced it.
       if (_phase == RestTimerPhase.running && remaining <= Duration.zero) {

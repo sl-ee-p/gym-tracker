@@ -59,7 +59,7 @@ class DatabaseHelper {
   ///  7. Bump pubspec.yaml's version build number.
   ///  8. Manually smoke-test upgrading a real pre-change install before
   ///     shipping.
-  static const int _databaseVersion = 8;
+  static const int _databaseVersion = 9;
 
   /// The schema version this build writes and understands. Exposed for the
   /// backup importer, which refuses files from a newer build.
@@ -126,6 +126,15 @@ class DatabaseHelper {
     if (oldVersion < 8) {
       await _upgradeToV8(db);
     }
+    if (oldVersion < 9) {
+      await _upgradeToV9(db);
+    }
+  }
+
+  /// The notification sound switch. Defaulted on, so nothing changes for an
+  /// existing install until the user turns it off.
+  Future<void> _upgradeToV9(Database db) async {
+    await db.execute('ALTER TABLE user_profiles ADD COLUMN notificationSoundEnabled INTEGER NOT NULL DEFAULT 1');
   }
 
   Future<void> _upgradeToV2(Database db) async {
@@ -437,7 +446,8 @@ class DatabaseHelper {
         workoutReminderDays TEXT,
         workoutReminderMinutes INTEGER NOT NULL DEFAULT 1080,
         weighInReminderDays TEXT,
-        weighInReminderMinutes INTEGER NOT NULL DEFAULT 450
+        weighInReminderMinutes INTEGER NOT NULL DEFAULT 450,
+        notificationSoundEnabled INTEGER NOT NULL DEFAULT 1
       )
     ''');
 

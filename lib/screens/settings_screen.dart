@@ -400,6 +400,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             defaultDays: const {1},
                             onChanged: userProvider.updateWeighInReminder,
                           ),
+                          const Divider(height: 24),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(Icons.volume_up_outlined),
+                            title: const Text('Notification sound'),
+                            subtitle: const Text(
+                              'Rest timer chime and reminders. Vibration '
+                              'stays on.',
+                            ),
+                            value: userProvider.notificationSoundEnabled,
+                            onChanged:
+                                userProvider.updateNotificationSoundEnabled,
+                          ),
                         ],
                       );
                     },

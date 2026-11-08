@@ -39,6 +39,9 @@ class _FakeSettings implements RestTimerSettings {
     stored = duration;
     writes++;
   }
+
+  @override
+  bool soundEnabled = true;
 }
 
 class _FakeScheduler implements RestTimerScheduler {
@@ -251,6 +254,77 @@ void main() {
       // The scheduled notification already announced it; chiming here would
       // announce the same rest twice.
       expect(alerts.chimes, 0);
+    });
+
+    test('with sound off a finished rest buzzes but does not chime', () {
+      settings.soundEnabled = false;
+      controller.start(const Duration(seconds: 30));
+      controller.adjust(const Duration(seconds: -60));
+
+      expect(alerts.haptics, 1);
+      expect(alerts.chimes, 0);
+    });
+  });
+
+  group('a rest that ends on the ticker while backgrounded', () {
+    // One real tick: the only way to reach the path Android takes when it
+    // keeps the process running after the app is backgrounded.
+    Future<void> finishOnTicker() async {
+      controller.start(const Duration(seconds: 30));
+      controller.didChangeAppLifecycleState(AppLifecycleState.paused);
+      advance(const Duration(seconds: 31));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
+
+    test('leaves the alarm armed so its alert is not pulled', () async {
+      await finishOnTicker();
+      final armedFor = scheduler.scheduledFor;
+      final cancels = scheduler.cancels;
+
+      expect(controller.isCompleted, isTrue);
+      expect(armedFor, isNotNull);
+      expect(scheduler.ongoingRunning, isNull);
+
+      // Whatever syncs next while still away must not take it down either.
+      controller.didChangeAppLifecycleState(AppLifecycleState.hidden);
+      expect(scheduler.cancels, cancels);
+      expect(scheduler.scheduledFor, armedFor);
+    });
+
+    test('does not chime over the alert', () async {
+      await finishOnTicker();
+
+      expect(alerts.chimes, 0);
+      expect(alerts.haptics, 0);
+    });
+
+    test('clears the delivered alert on returning to the app', () async {
+      await finishOnTicker();
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+      expect(scheduler.scheduledFor, isNull);
+      expect(controller.isCompleted, isTrue);
+      expect(alerts.chimes, 0);
+    });
+
+    test('still chimes when the rest ends in the foreground', () async {
+      controller.start(const Duration(seconds: 30));
+      advance(const Duration(seconds: 31));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(alerts.chimes, 1);
+      expect(scheduler.scheduledFor, isNull);
+    });
+
+    test('a shade -15 s past zero still drops the now-pointless alarm', () {
+      controller.start(const Duration(seconds: 30));
+      controller.didChangeAppLifecycleState(AppLifecycleState.paused);
+      expect(scheduler.scheduledFor, isNotNull);
+
+      controller.adjust(const Duration(seconds: -60));
+
+      expect(controller.isCompleted, isTrue);
+      expect(scheduler.scheduledFor, isNull);
     });
   });
 

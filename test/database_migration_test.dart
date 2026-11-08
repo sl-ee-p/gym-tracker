@@ -739,7 +739,7 @@ void main() {
     // Opening always migrates to the current _databaseVersion, not to 2
     // specifically — this asserts the full chain still lands correctly,
     // not that the app is pinned at v2.
-    expect(await upgraded.getVersion(), 8);
+    expect(await upgraded.getVersion(), 9);
 
     final exercises = await upgraded.query('exercises');
     expect(exercises, hasLength(1));
@@ -776,7 +776,7 @@ void main() {
 
     final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
 
-    expect(await upgraded.getVersion(), 8);
+    expect(await upgraded.getVersion(), 9);
 
     final profiles = await upgraded.query('user_profiles');
     expect(profiles, hasLength(1));
@@ -840,7 +840,7 @@ void main() {
     await legacyDb.close();
 
     final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
-    expect(await upgraded.getVersion(), 8);
+    expect(await upgraded.getVersion(), 9);
 
     final profiles = await upgraded.query('user_profiles');
     expect(profiles, hasLength(1));
@@ -1021,7 +1021,7 @@ void main() {
     await legacyDb.close();
 
     final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
-    expect(await upgraded.getVersion(), 8);
+    expect(await upgraded.getVersion(), 9);
 
     final profile = (await upgraded.query('user_profiles')).single;
     expect(profile['name'], 'Sam');
@@ -1138,7 +1138,7 @@ void main() {
       await legacyDb.close();
 
       final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
-      expect(await upgraded.getVersion(), 8);
+      expect(await upgraded.getVersion(), 9);
 
       // Old rows survive untouched, and the new template column defaults to
       // null — "no groups", exactly matching what a template created before
@@ -1175,6 +1175,60 @@ void main() {
 
       await upgraded.close();
     });
+  });
+
+  test('upgrading a legacy v8 database adds the sound setting, on', () async {
+    final legacyV7 = await openLegacyV7Database(dbPath);
+    await legacyV7.close();
+
+    // v7 plus the v8 delta as literal SQL. Frozen — never edit this to match
+    // future schema changes.
+    final legacyDb = await databaseFactoryFfi.openDatabase(
+      dbPath,
+      options: OpenDatabaseOptions(
+        version: 8,
+        onUpgrade: (db, oldVersion, newVersion) async {
+          await db.execute('ALTER TABLE exercise_sets ADD COLUMN partialReps INTEGER');
+          await db.execute('ALTER TABLE exercise_sets ADD COLUMN rpe REAL');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN partialRepsEnabled INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN rpeEnabled INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN targetWeight REAL');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN targetWeightStart REAL');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN workoutReminderDays TEXT');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN workoutReminderMinutes INTEGER NOT NULL DEFAULT 1080');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN weighInReminderDays TEXT');
+          await db.execute('ALTER TABLE user_profiles ADD COLUMN weighInReminderMinutes INTEGER NOT NULL DEFAULT 450');
+          await db.execute('''
+            CREATE TABLE body_measurements (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              type TEXT NOT NULL,
+              value REAL NOT NULL,
+              date TEXT NOT NULL,
+              notes TEXT
+            )
+          ''');
+        },
+      ),
+    );
+    await legacyDb.insert('user_profiles', {
+      'name': 'Sam',
+      'createdDate': DateTime(2025, 3, 1).toIso8601String(),
+      'rpeEnabled': 1,
+      'workoutReminderDays': '1,3,5',
+    });
+    expect(await legacyDb.getVersion(), 8);
+    await legacyDb.close();
+
+    final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
+    expect(await upgraded.getVersion(), 9);
+
+    final profile = (await upgraded.query('user_profiles')).single;
+    expect(profile['name'], 'Sam');
+    expect(profile['rpeEnabled'], 1);
+    expect(profile['workoutReminderDays'], '1,3,5');
+    expect(profile['notificationSoundEnabled'], 1);
+
+    await upgraded.close();
   });
 
   group('upgrading a legacy v7 database to v8', () {
@@ -1238,7 +1292,7 @@ void main() {
       await legacyDb.close();
 
       final upgraded = await DatabaseHelper().openDatabaseAt(dbPath);
-      expect(await upgraded.getVersion(), 8);
+      expect(await upgraded.getVersion(), 9);
 
       final profile = (await upgraded.query('user_profiles')).single;
       expect(profile['name'], 'Sam');

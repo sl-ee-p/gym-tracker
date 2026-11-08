@@ -55,6 +55,8 @@ class UserProvider extends ChangeNotifier {
 
   bool get partialRepsEnabled => _userProfile?.partialRepsEnabled ?? false;
   bool get rpeEnabled => _userProfile?.rpeEnabled ?? false;
+  bool get notificationSoundEnabled =>
+      _userProfile?.notificationSoundEnabled ?? true;
 
   ReminderSchedule get workoutReminder => ReminderSchedule.parse(
         _userProfile?.workoutReminderDays,
@@ -285,6 +287,16 @@ class UserProvider extends ChangeNotifier {
     );
   }
 
+  Future<void> updateNotificationSoundEnabled(bool enabled) async {
+    if (_userProfile == null) return;
+    await _persist(
+      _userProfile!.copyWith(notificationSoundEnabled: enabled),
+      'notification sound setting',
+    );
+    // Already-scheduled reminders carry their channel with them.
+    await syncReminders();
+  }
+
   /// Sets the goal and restarts its progress from today's weight: a new goal
   /// is measured from where you are now, not from where an old one began.
   Future<void> updateTargetWeight(double kg) async {
@@ -350,10 +362,13 @@ class UserProvider extends ChangeNotifier {
 
   /// Schedules the OS reminders to match the saved settings. Called at
   /// startup and after anything that replaces the profile (Clear, Restore).
-  Future<void> syncReminders() => NotificationService.instance.syncReminders(
-        workout: workoutReminder,
-        weighIn: weighInReminder,
-      );
+  Future<void> syncReminders() {
+    NotificationService.instance.soundEnabled = notificationSoundEnabled;
+    return NotificationService.instance.syncReminders(
+      workout: workoutReminder,
+      weighIn: weighInReminder,
+    );
+  }
 
   Future<void> updateProgressDateRange(String rangeName) async {
     if (_userProfile == null) return;

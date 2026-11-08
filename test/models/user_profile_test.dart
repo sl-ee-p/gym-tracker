@@ -60,6 +60,23 @@ void main() {
     });
   });
 
+  group('v9 settings', () {
+    test('notification sound defaults to on', () {
+      expect(profile().notificationSoundEnabled, isTrue);
+      expect(
+        UserProfile.fromMap(profile().toMap()..remove('notificationSoundEnabled'))
+            .notificationSoundEnabled,
+        isTrue,
+      );
+    });
+
+    test('notification sound round-trips through toMap/fromMap', () {
+      final off = profile().copyWith(notificationSoundEnabled: false);
+
+      expect(UserProfile.fromMap(off.toMap()).notificationSoundEnabled, isFalse);
+    });
+  });
+
   group('v8 settings', () {
     test('default to off, no goal and the stock reminder times', () {
       final fresh = profile();

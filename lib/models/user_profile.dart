@@ -56,6 +56,10 @@ class UserProfile {
   /// Whether the set form offers an RPE picker. Same input-only gating.
   bool rpeEnabled;
 
+  /// Whether the rest-complete alert, the in-app chime and the weekly
+  /// reminders make a sound. Vibration is unaffected.
+  bool notificationSoundEnabled;
+
   /// Goal body weight in kg. Null means no goal.
   double? targetWeight;
 
@@ -97,6 +101,7 @@ class UserProfile {
     this.restTimerSeconds,
     this.partialRepsEnabled = false,
     this.rpeEnabled = false,
+    this.notificationSoundEnabled = true,
     this.targetWeight,
     this.targetWeightStart,
     this.workoutReminderDays,
@@ -127,6 +132,7 @@ class UserProfile {
       'restTimerSeconds': restTimerSeconds,
       'partialRepsEnabled': partialRepsEnabled ? 1 : 0,
       'rpeEnabled': rpeEnabled ? 1 : 0,
+      'notificationSoundEnabled': notificationSoundEnabled ? 1 : 0,
       'targetWeight': targetWeight,
       'targetWeightStart': targetWeightStart,
       'workoutReminderDays': workoutReminderDays,
@@ -161,6 +167,8 @@ class UserProfile {
       restTimerSeconds: map['restTimerSeconds']?.toInt(),
       partialRepsEnabled: map['partialRepsEnabled'] == 1,
       rpeEnabled: map['rpeEnabled'] == 1,
+      // Defaults to on: rows written before v9 have the column's DEFAULT 1.
+      notificationSoundEnabled: map['notificationSoundEnabled'] != 0,
       targetWeight: map['targetWeight']?.toDouble(),
       targetWeightStart: map['targetWeightStart']?.toDouble(),
       workoutReminderDays: map['workoutReminderDays'],
@@ -195,6 +203,7 @@ class UserProfile {
     int? restTimerSeconds,
     bool? partialRepsEnabled,
     bool? rpeEnabled,
+    bool? notificationSoundEnabled,
     double? targetWeight,
     double? targetWeightStart,
     String? workoutReminderDays,
@@ -242,6 +251,8 @@ class UserProfile {
       restTimerSeconds: restTimerSeconds ?? this.restTimerSeconds,
       partialRepsEnabled: partialRepsEnabled ?? this.partialRepsEnabled,
       rpeEnabled: rpeEnabled ?? this.rpeEnabled,
+      notificationSoundEnabled:
+          notificationSoundEnabled ?? this.notificationSoundEnabled,
       // Clearing the goal clears its starting point too: a start without a
       // target means nothing.
       targetWeight:

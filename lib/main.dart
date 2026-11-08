@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/exercise_provider.dart';
@@ -16,6 +19,13 @@ import 'theme/app_theme.dart';
 void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  // Inter ships in the app. Off so a missing weight fails loudly in debug
+  // instead of working there (where INTERNET is granted) and not in release.
+  GoogleFonts.config.allowRuntimeFetching = false;
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString('assets/google_fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(const ['Inter'], license);
+  });
   runApp(const MyApp());
 }
 
@@ -270,6 +280,9 @@ class UserProfileRestTimerSettings implements RestTimerSettings {
   @override
   Future<void> write(Duration duration) =>
       _userProvider.updateRestTimerDuration(duration);
+
+  @override
+  bool get soundEnabled => _userProvider.notificationSoundEnabled;
 }
 
 /// Hands the controller's notification decisions to the OS.
