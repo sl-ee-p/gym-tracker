@@ -381,5 +381,34 @@
         "type": "String"
       }
     }
+  },
+  "coachRowTopSet": "Coach · top set",
+  "@coachRowTopSet": {
+    "description": "Label of the workout-screen suggestion before any working set is logged."
+  },
+  "coachRowSet": "Coach · set {number}",
+  "@coachRowSet": {
+    "description": "Label of the workout-screen suggestion for a later set.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRowDeload": "Coach · deload",
+  "@coachRowDeload": {
+    "description": "Label of the workout-screen suggestion while deloading."
+  },
+  "coachUseSemantics": "Fill in {weight} for {reps} reps",
+  "@coachUseSemantics": {
+    "description": "Screen-reader label of the Use button.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
   }
 }

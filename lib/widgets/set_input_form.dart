@@ -32,6 +32,14 @@ class SetInputForm extends StatefulWidget {
   /// full rest-timer picker.
   final VoidCallback? onQuickRestRequested;
 
+  /// Optional content shown above the fields (the coach's suggestion row).
+  /// It gets [apply], which fills the weight (kilograms) and reps fields.
+  /// Nothing fills them unless the user taps something that calls [apply]:
+  /// see the note on [_SetInputFormState] about not pre-filling.
+  final Widget Function(
+          void Function(double weightKg, int reps) apply)?
+      suggestionBuilder;
+
   const SetInputForm({
     super.key,
     required this.exercise,
@@ -39,6 +47,7 @@ class SetInputForm extends StatefulWidget {
     this.onRestTimerRequested,
     this.isLastInGroup = true,
     this.onQuickRestRequested,
+    this.suggestionBuilder,
   });
 
   @override
@@ -64,6 +73,16 @@ class _SetInputFormState extends State<SetInputForm> {
   // was never reliably empty, and it was far too easy to log a set you hadn't
   // actually re-entered. The previous sets stay visible in the exercise's
   // sets card.
+
+  /// Fills weight and reps on an explicit user action (the coach's "Use").
+  void _applySuggestion(double weightKg, int reps) {
+    final unit = context.read<UserProvider>().weightUnit;
+    setState(() {
+      _weightController.text = formatWeightValue(weightKg, unit: unit);
+      _repsController.text = '$reps';
+      _isWarmup = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -121,6 +140,8 @@ class _SetInputFormState extends State<SetInputForm> {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (widget.suggestionBuilder != null)
+                widget.suggestionBuilder!(_applySuggestion),
 
               // crossAxisAlignment.start, plus the reserved error line every
               // field below carries, is what keeps these two inputs aligned.

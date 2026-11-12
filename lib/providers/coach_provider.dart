@@ -31,6 +31,9 @@ class CoachProvider extends ChangeNotifier {
   /// Workout id → exercise ids where the user started the suggested deload.
   final Map<int?, Set<int>> _deloadStarted = {};
 
+  /// Workout id → exercise ids where the user declined the deload banner.
+  final Map<int?, Set<int>> _deloadDeclined = {};
+
   /// Called by the proxy provider when workouts or profile settings change.
   void update({required String unit, required double defaultBarWeightKg}) {
     final settingsChanged =
@@ -100,6 +103,14 @@ class CoachProvider extends ChangeNotifier {
 
   void startDeload(int? workoutId, int exerciseId) {
     (_deloadStarted[workoutId] ??= {}).add(exerciseId);
+    notifyListeners();
+  }
+
+  bool isDeloadDeclined(int? workoutId, int exerciseId) =>
+      _deloadDeclined[workoutId]?.contains(exerciseId) ?? false;
+
+  void declineDeload(int? workoutId, int exerciseId) {
+    (_deloadDeclined[workoutId] ??= {}).add(exerciseId);
     notifyListeners();
   }
 

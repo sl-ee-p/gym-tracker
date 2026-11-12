@@ -15,6 +15,7 @@ import '../services/home_widget_service.dart';
 import '../theme/app_theme.dart';
 import 'templates_screen.dart';
 
+import '../widgets/coach/coach_suggestion_row.dart';
 import '../widgets/exercise_sets_card.dart';
 import '../widgets/set_input_form.dart';
 import '../widgets/rest_timer_widget.dart';
@@ -747,6 +748,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 onQuickRestRequested: () => context
                     .read<RestTimerController>()
                     .start(RestTimerController.quickRestDuration),
+                suggestionBuilder: (apply) => CoachSuggestionRow(
+                  exercise: exercise,
+                  workoutId: workoutProvider.activeWorkout?.id,
+                  workingSetsLogged:
+                      sets.where((set) => !set.isWarmup).length,
+                  apply: apply,
+                ),
               ),
             ],
           ],

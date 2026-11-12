@@ -235,4 +235,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String coachReasonWelcomeBack(int days, String percent) {
     return '$days days since you last trained this, so start $percent% lighter.';
   }
+
+  @override
+  String get coachRowTopSet => 'Coach · top set';
+
+  @override
+  String coachRowSet(int number) {
+    return 'Coach · set $number';
+  }
+
+  @override
+  String get coachRowDeload => 'Coach · deload';
+
+  @override
+  String coachUseSemantics(String weight, int reps) {
+    return 'Fill in $weight for $reps reps';
+  }
 }

@@ -393,6 +393,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days} days since you last trained this, so start {percent}% lighter.'**
   String coachReasonWelcomeBack(int days, String percent);
+
+  /// Label of the workout-screen suggestion before any working set is logged.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach · top set'**
+  String get coachRowTopSet;
+
+  /// Label of the workout-screen suggestion for a later set.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach · set {number}'**
+  String coachRowSet(int number);
+
+  /// Label of the workout-screen suggestion while deloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach · deload'**
+  String get coachRowDeload;
+
+  /// Screen-reader label of the Use button.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in {weight} for {reps} reps'**
+  String coachUseSemantics(String weight, int reps);
 }
 
 class _AppLocalizationsDelegate
