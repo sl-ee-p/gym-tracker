@@ -117,9 +117,10 @@ class CoachWhySheet extends StatelessWidget {
                   points: report.trend,
                   unit: report.unit,
                   compact: false,
+                  showValues: report.showsOneRepMax,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 l10n.coachTrendAverage,
                 style: theme.textTheme.bodySmall?.copyWith(

@@ -155,7 +155,10 @@ void main() {
     expect(find.text('Progressing'), findsOneWidget);
     expect(find.text('Estimated 1RM'), findsOneWidget);
     expect(find.text('114 kg'), findsOneWidget);
-    expect(find.text('+3% in 4 weeks'), findsOneWidget);
+    expect(
+      find.textContaining('+3% in 4 weeks', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.text('92.5 kg × 6–8'), findsOneWidget);
     expect(find.textContaining('Time to add weight'), findsOneWidget);
 

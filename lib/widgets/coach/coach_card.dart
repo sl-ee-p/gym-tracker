@@ -244,7 +244,9 @@ class _Headline extends StatelessWidget {
     final String value;
     if (report.showsOneRepMax && report.latestValueKg != null) {
       label = l10n.coachEstimatedOneRepMax;
-      value = formatWeight(report.latestValueKg!, unit: unit);
+      // An estimate: whole units only, so it doesn't read as measured.
+      final whole = kgToUnit(report.latestValueKg!, unit).roundToDouble();
+      value = '${formatDecimal(whole)} $unit';
     } else {
       label = l10n.coachLastTopSet;
       value = top == null
@@ -289,17 +291,22 @@ class _Headline extends StatelessWidget {
                 child: Text(value, style: NumericTextStyles.title()),
               ),
               const SizedBox(height: 2),
-              Row(
-                children: [
-                  Icon(icon, size: 14, color: color),
-                  const SizedBox(width: 2),
-                  Flexible(
-                    child: Text(
-                      changeText,
-                      style: theme.textTheme.labelSmall?.copyWith(color: color),
+              // Inline icon so it stays with the first word when large
+              // font sizes wrap the line.
+              Text.rich(
+                TextSpan(
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 2),
+                        child: Icon(icon, size: 14, color: color),
+                      ),
                     ),
-                  ),
-                ],
+                    TextSpan(text: changeText),
+                  ],
+                ),
+                style: theme.textTheme.labelSmall?.copyWith(color: color),
               ),
             ],
           ),

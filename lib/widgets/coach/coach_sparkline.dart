@@ -15,11 +15,16 @@ class CoachSparkline extends StatelessWidget {
     required this.points,
     required this.unit,
     this.compact = true,
+    this.showValues = true,
   });
 
   final List<CoachTrendPoint> points;
   final String unit;
   final bool compact;
+
+  /// False for the high-rep strength index: its numbers look like kg but
+  /// aren't, so only the shape is shown.
+  final bool showValues;
 
   double _u(double kg) => unit == 'lbs' ? kg * coachLbsPerKg : kg;
 
@@ -69,12 +74,18 @@ class CoachSparkline extends StatelessWidget {
             rightTitles: const AxisTitles(
               sideTitles: SideTitles(showTitles: false),
             ),
-            bottomTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+            // Reserved but empty: keeps the lowest axis label clear of whatever
+            // sits under the chart.
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: !compact,
+                reservedSize: 12,
+                getTitlesWidget: (_, _) => const SizedBox.shrink(),
+              ),
             ),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
-                showTitles: true,
+                showTitles: showValues,
                 reservedSize: 40,
                 interval: axis.interval,
                 getTitlesWidget: (value, meta) => Text(

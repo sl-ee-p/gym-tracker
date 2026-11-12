@@ -170,7 +170,7 @@ Progress:
 - [x] C0: l10n scaffold + this document
 - [x] C1: pure engine (`lib/coach/`) + table-driven tests (`test/coach/`)
 - [x] C2: backtest (`tool/coach_backtest.dart`) + tuning (see Validation)
-- [ ] C3
+- [x] C3: CoachService, CoachProvider, Coach card on Exercise details, "Why?" sheet
 - [ ] C4
 - [ ] C5
 
