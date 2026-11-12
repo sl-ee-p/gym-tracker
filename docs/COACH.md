@@ -2,7 +2,7 @@
 
 The coach reads an exercise's logged history and does four things. It estimates the 1RM trend and suggests the next session's weight and reps. It also flags stalls and recommends a deload. All of it is pure maths on existing data: there is no schema change, and the coach stores no state.
 
-Status: in progress on `feature/coach`. Milestones are listed at the end.
+Status: built on `feature/coach` (C0–C5), not merged. Free for now; see Free vs Pro for the gating follow-up.
 
 ## Progression rules (v1, tunable by the backtest)
 All maths works on **completed** workouts only. A **working set** is non-warm-up, weight > 0, reps ≥ 1; partial reps are ignored. Sessions with an exercise = "exposures". Weights are computed in kg and rounded in the **display unit**.
@@ -171,8 +171,8 @@ Progress:
 - [x] C1: pure engine (`lib/coach/`) + table-driven tests (`test/coach/`)
 - [x] C2: backtest (`tool/coach_backtest.dart`) + tuning (see Validation)
 - [x] C3: CoachService, CoachProvider, Coach card on Exercise details, "Why?" sheet
-- [ ] C4
-- [ ] C5
+- [x] C4: workout-screen row (Use / Not now / Why?), set-2 target, deload offer (Start deload / Not now)
+- [x] C5: wrap-up: analyze, full suite, emulator screenshots (light, dark, 2× font), 1.1.0+16
 
 ## Validation (C2)
 

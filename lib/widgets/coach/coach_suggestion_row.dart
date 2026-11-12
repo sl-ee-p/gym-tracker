@@ -163,6 +163,10 @@ class _TargetRow extends StatelessWidget {
     final bg = deload ? scheme.tertiaryContainer : scheme.surfaceContainerHigh;
     final fg = deload ? scheme.onTertiaryContainer : scheme.primary;
     final muted = deload ? scheme.onTertiaryContainer : scheme.onSurfaceVariant;
+    // On the tinted deload row the text buttons take the banner's colour.
+    final textStyle = deload
+        ? TextButton.styleFrom(foregroundColor: scheme.onTertiaryContainer)
+        : null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -216,15 +220,22 @@ class _TargetRow extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: AppSpacing.xs,
               children: [
-                TextButton(onPressed: onWhy, child: Text(l10n.coachWhy)),
-                TextButton(onPressed: onDismiss, child: Text(l10n.coachNotNow)),
-                Semantics(
-                  label: useSemantics,
-                  excludeSemantics: true,
-                  button: true,
-                  child: FilledButton.tonal(
-                    onPressed: onUse,
-                    child: Text(l10n.coachUse),
+                TextButton(
+                  onPressed: onWhy,
+                  style: textStyle,
+                  child: Text(l10n.coachWhy),
+                ),
+                TextButton(
+                  onPressed: onDismiss,
+                  style: textStyle,
+                  child: Text(l10n.coachNotNow),
+                ),
+                FilledButton.tonal(
+                  onPressed: onUse,
+                  child: Text(
+                    l10n.coachUse,
+                    // Says what it fills, not just "Use".
+                    semanticsLabel: useSemantics,
                   ),
                 ),
               ],
