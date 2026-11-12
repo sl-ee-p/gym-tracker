@@ -16,10 +16,11 @@ All maths works on **completed** workouts only. A **working set** is non-warm-up
 ### 2. Top set and fragments
 - **Fragments** are sets with fewer than half the session's best reps (fatigued back-offs and failed tail sets). They are ignored everywhere.
 - The **top set** is the first remaining set at the session's heaviest weight. The **2nd set** is the next remaining set at that weight.
-- A session whose top weight is ≤ 92.5% of the median of the previous 4 non-light top weights is **light**. It is a deload if one was due; otherwise it is ignored and suggestions build on the last normal session.
+- A session whose top weight is ≤ 92.5% of the median top weight of the previous 4 sessions is **light**. It is a deload if one was due. Otherwise a **one-off** light session is ignored and suggestions build on the session before it. Two light sessions in a row are the new normal and are not ignored. Because the median includes light sessions, a deliberate drop in weight stops counting as light after a couple of sessions.
 
 ### 3. 1RM and trend
-- **Session e1RM** = max Epley over working sets. Taking the max makes fatigued fragments harmless automatically.
+- **Session e1RM** = max Epley over working sets. This is what the trend chart shows.
+- **Session score** = the mean e1RM of the two best sets. Stall and regression use the score, so 2nd-set rep gains (how a double progression moves) count as progress. A one-set session of a lift usually done for 2+ sets has no score, because its single set would beat every normal session's average.
 - **If `hi` ≤ 12:** show the e1RM in kg/lb, using the existing helper with its 12-rep cap.
 - **If `hi` > 12:** the existing helper deliberately refuses estimates. So:
   - Track a relative **strength index** (Epley allowed up to 20 reps), used only for the trend and stall maths.
@@ -51,19 +52,21 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 - **lb users:** history is converted to lb before learning the step, so suggestions land on lb-loadable weights.
 
 ### 6. Stall
-- **Definition:** **4 consecutive exposures** where the best value (e1RM or index) gains ≤ 0.5% over the best of the 12 weeks before them.
-- **Scope:** only exposures within the last 8 weeks count.
-- **Grace:** the comparison window restarts after a deload and after a gap of more than 28 days. The first session of a window is its baseline: it is neither a new best nor a stalled session, so a stall needs 4 flat sessions after it.
-- **UI:** the status chip shows "Stalled".
+- **Definition:** the best score of the **recent block** of sessions is no more than 0.5% above the best score of the **block before it**.
+  - A block covers the last 21 days (so it holds more sessions for lifts trained more often) and never fewer than 4 sessions.
+  - Both blocks must fall inside the current comparison window.
+- **Window restarts** after a deload and after any break that earns a "welcome back" cut (rule 8). The first session of a window is its baseline.
+- **No deload call while the top of the range is being hit:** if the suggestion is "add weight", the lifter needs more load, not a deload.
+- **UI:** the status chip shows "Stalled", and the session count shown is the number of sessions since the last new best.
 
 ### 7. Deload
 - **Trigger** (either):
   - a stall, or
-  - **regression:** 2 consecutive exposures ≥ 5% below the best of the last 6 weeks, both at the same or a lighter weight than that best session. A failed attempt at a heavier weight is handled by the rep rules (hold, then step back), not by a deload.
+  - **regression:** 2 consecutive sessions whose scores are ≥ 5% below the best of the last 6 weeks, at the **same weight** as that best session. Lighter sessions score lower by design. A failed attempt at a heavier weight is handled by the rep rules (hold, then step back).
 - **Size:** −10% of W, rounded **down** to loadable. Same sets, target `lo` reps, with the instruction "leave 2–3 reps in the tank".
-- **Length:** 1 exposure if the exercise is trained ≤ 1×/week, 2 if more often (about a week either way).
-- **Detection is stateless:** an exposure counts as a deload if its top weight is ≤ 92.5% of the median top weight of the previous 4 exposures, while a stall or regression was active. This survives backup and restore, and needs no schema change.
-- **Resume:** the next suggestion is pre-deload W − 1 step, then normal double progression. The stall counter restarts with the 3-exposure grace.
+- **Length:** 1 session if the exercise was trained ≤ 4 times in the previous 28 days, otherwise 2 (about a week either way).
+- **Detection is stateless:** a light session (rule 2) that comes while a stall or regression is active is a deload. This survives backup and restore, and needs no schema change.
+- **Resume:** the next suggestion is pre-deload W − 1 step, then normal double progression in a fresh window.
 
 ### 8. Edge cases
 | Case | Behaviour |
@@ -71,10 +74,11 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 | 0 exposures | Empty state: "Log a session to get suggestions" |
 | 1–2 exposures | "Building your baseline (n of 3)"; suggestion = repeat W, R+1; no trend or stall |
 | New exercise | Same as 1–2 exposures |
-| Gap > 14 days | Suggestion −5% (rounded); reason says "welcome back" |
-| Gap > 28 days | Suggestion −10%; stall/regression window resets |
+| Break > max(14 days, 2× the usual gap between sessions) | Suggestion −5% (rounded down); reason says "welcome back"; any deload call is dropped (the break was the deload) and the stall window restarts |
+| Break > max(28 days, 4× the usual gap) | Suggestion −10% instead |
 | Unit changed | Nothing stored per unit: history is kg, and the step and grid are re-derived in the new unit |
 | Not weight × reps (time-based, unweighted, reps off) | Card says the coach covers weight × reps exercises only; no workout row |
+| Working weights all below 1 kg (bodyweight logged as 0.1 kg) | Status `unsupported`, same as above |
 | Sets of deleted exercises, in-progress workout | Ignored |
 | RPE | Not used in v1 (only 200 sets). Listed as an extra |
 
@@ -164,10 +168,30 @@ The backtest's metrics, per exposure in 20 Jul–20 Oct:
 Progress:
 - [x] C0: l10n scaffold + this document
 - [x] C1: pure engine (`lib/coach/`) + table-driven tests (`test/coach/`)
-- [ ] C2
+- [x] C2: backtest (`tool/coach_backtest.dart`) + tuning (see Validation)
 - [ ] C3
 - [ ] C4
 - [ ] C5
+
+## Validation (C2)
+
+Run: `dart run tool/coach_backtest.dart <backup.json> <report.md> [from] [to]`. Each scored session is predicted from earlier history only. Aggregate results on the owner's own logs:
+
+| Window | Scored sessions | Decision agrees | Weight exact | Weight within 1 step | Deload episodes |
+|---|---|---|---|---|---|
+| Tuning: 20 Jul–20 Oct (backup of 20 Oct) | 235 | 59% | 52% | 88% | 1 (2 calls, one plateau) |
+| Unseen: 21 Oct–11 Nov (backup of 11 Nov), rules frozen | 71 | 49% | 48% | 93% | 4 |
+
+- **Low exact agreement is mostly the lifter's own inconsistency.** The same situation gets "add" one week and "hold" the next.
+- **When the lifter did go up, it worked.** Where the coach said "add weight" and the lifter went up, they still hit the bottom of the rep range 96% (tuning) and 100% (unseen) of the time. They also hit it 95–100% of the time when they went up after "climbing reps".
+- **Rule changes from the backtest:**
+  - stall = block versus block, not session versus a 12-week peak
+  - the stall score counts the 2nd set
+  - breaks scale with training frequency, and a break cancels any deload call and restarts the stall window
+  - only one-off light sessions are ignored
+  - regression requires the same weight
+  - no deload while "add weight" applies
+  - placeholder weights are unsupported
 
 Validation data stays outside the repo. The backtest reads a backup path given on the command line and writes its report to `~/scratch/coach-backtest/`, because the report contains personal training data.
 

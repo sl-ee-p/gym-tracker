@@ -20,6 +20,7 @@ class CoachConfig {
     this.bestWindowDays = 84,
     this.newBestMargin = 0.005,
     this.stallExposures = 4,
+    this.stallDays = 21,
     this.regressionWindowDays = 42,
     this.regressionDrop = 0.05,
     this.lightSessionRatio = 0.925,
@@ -29,6 +30,7 @@ class CoachConfig {
     this.longBreakDays = 28,
     this.longBreakCut = 0.10,
     this.progressingLookback = 3,
+    this.minRealWeightKg = 1,
     this.trendLength = 12,
     this.averageWindow = 3,
     this.changeLookbackDays = 28,
@@ -57,8 +59,11 @@ class CoachConfig {
   final int bestWindowDays;
   final double newBestMargin;
 
-  /// Sessions in a row without a new best that count as a stall.
+  /// A stall compares the recent block of sessions with the block before
+  /// it. A block spans [stallDays] (so it holds more sessions for lifts
+  /// trained more often) and never fewer than [stallExposures] sessions.
   final int stallExposures;
+  final int stallDays;
   final int regressionWindowDays;
   final double regressionDrop;
 
@@ -71,6 +76,9 @@ class CoachConfig {
   final int longBreakDays;
   final double longBreakCut;
   final int progressingLookback;
+
+  /// Below this every working weight is taken as a placeholder.
+  final double minRealWeightKg;
   final int trendLength;
   final int averageWindow;
   final int changeLookbackDays;
@@ -92,6 +100,10 @@ class _Session {
   final List<CoachSet> working;
 
   double? value;
+
+  /// Mean e1RM of the two best sets: unlike [value] it rises when the 2nd
+  /// set gains reps, which is how a double progression moves.
+  double? score;
   bool light = false;
   bool deload = false;
   bool newBest = false;
@@ -144,6 +156,23 @@ class ProgressionEngine {
       );
     }
 
+    // Bodyweight lifts logged with a token weight (0.1 kg) are not weight x
+    // reps work the coach can steer.
+    final recentMax = sessions.reversed
+        .take(c.rangeWindow)
+        .expand((s) => s.working)
+        .map((s) => s.weightKg)
+        .reduce(math.max);
+    if (recentMax < c.minRealWeightKg) {
+      return CoachReport(
+        status: CoachStatus.unsupported,
+        range: c.defaultRange,
+        step: LoadGrid.defaultStep(unit),
+        unit: unit,
+        exposures: sessions.length,
+      );
+    }
+
     final range = _learnRange(sessions);
     final last = sessions.last;
     final ladderFrom = last.date.subtract(Duration(days: c.ladderWindowDays));
@@ -159,8 +188,14 @@ class ProgressionEngine {
 
     final showsOneRepMax = range.hi <= 12;
     final repCap = showsOneRepMax ? 12 : 20;
+    // A one-set session of a lift normally done for 2+ sets has no fair
+    // score: its single best set would beat every normal session's average.
+    final usualSets = _median([
+      for (final s in sessions) s.working.length.toDouble(),
+    ]);
     for (final s in sessions) {
       double? best;
+      final values = <double>[];
       for (final set in s.working) {
         final v = estimateOneRepMax(
           set.weightKg,
@@ -168,8 +203,15 @@ class ProgressionEngine {
           maxMeaningfulReps: repCap,
         );
         if (v != null && (best == null || v > best)) best = v;
+        if (v != null) values.add(v);
       }
       s.value = best;
+      values.sort((a, b) => b.compareTo(a));
+      s.score = values.isEmpty || (usualSets >= 2 && values.length < 2)
+          ? null
+          : values.length == 1
+          ? values.first
+          : (values[0] + values[1]) / 2;
     }
 
     final deloadLength = _replay(sessions, range);
@@ -283,7 +325,13 @@ class ProgressionEngine {
       }
     } else {
       // Normal double progression from the last non-light session.
-      final baseIndex = sessions.lastIndexWhere((s) => !s.light);
+      // Only a one-off light session is ignored; two in a row are the new
+      // normal and the suggestion builds on them.
+      final oneOffLight =
+          last.light &&
+          sessions.length > 1 &&
+          !sessions[sessions.length - 2].light;
+      final baseIndex = oneOffLight ? sessions.length - 2 : sessions.length - 1;
       final base = sessions[baseIndex < 0 ? sessions.length - 1 : baseIndex];
       if (!identical(base, last)) {
         reasons.add(
@@ -341,7 +389,7 @@ class ProgressionEngine {
         suggestion = make(CoachAction.addReps, w, r + 1, hi);
       } else {
         final prevIndex = sessions.lastIndexWhere(
-          (s) => !s.light && !identical(s, base),
+          (s) => !identical(s, base),
           baseIndex < 0 ? sessions.length - 1 : baseIndex,
         );
         final prev = prevIndex < 0 ? null : sessions[prevIndex];
@@ -365,7 +413,10 @@ class ProgressionEngine {
         }
       }
 
-      final flaggedNow = base.flagged;
+      // Hitting the top of the range means the weight should go up, not
+      // that the lifter needs a deload.
+      final flaggedNow =
+          base.flagged && suggestion.action != CoachAction.addWeight;
       if (flaggedNow) {
         status = CoachStatus.stalled;
         final trigger = base.stalled
@@ -395,10 +446,11 @@ class ProgressionEngine {
     }
 
     // ----- Layoffs -----
-    if (status != CoachStatus.baseline && daysSince > c.shortBreakDays) {
-      final cut = daysSince > c.longBreakDays
-          ? c.longBreakCut
-          : c.shortBreakCut;
+    final usualGap = _usualGap(sessions);
+    final shortBreak = math.max(c.shortBreakDays, 2 * usualGap);
+    final longBreak = math.max(c.longBreakDays, 4 * usualGap);
+    if (status != CoachStatus.baseline && daysSince > shortBreak) {
+      final cut = daysSince > longBreak ? c.longBreakCut : c.shortBreakCut;
       reasons.add(
         CoachReason(CoachReasonCode.welcomeBack, days: daysSince, percent: cut),
       );
@@ -412,11 +464,9 @@ class ProgressionEngine {
         secondSetReps: suggestion.secondSetReps,
         reasons: List.unmodifiable(reasons),
       );
-      if (daysSince > c.longBreakDays) {
-        // The layoff was the deload; start counting afresh.
-        deload = null;
-        if (status == CoachStatus.stalled) status = CoachStatus.holding;
-      }
+      // The break was the deload; start counting afresh.
+      deload = null;
+      if (status == CoachStatus.stalled) status = CoachStatus.holding;
     }
 
     return CoachReport(
@@ -479,13 +529,19 @@ class ProgressionEngine {
     var deloadLength = 1;
     for (var i = 0; i < sessions.length; i++) {
       final s = sessions[i];
-      if (i > 0 && _days(sessions[i - 1].date, s.date) > c.longBreakDays) {
+      // A break long enough to earn a "welcome back" cut also acts as a
+      // deload: the comparison window starts again after it.
+      if (i > 0 &&
+          _days(sessions[i - 1].date, s.date) >
+              math.max(
+                c.shortBreakDays,
+                2 * _usualGap(sessions.sublist(0, i)),
+              )) {
         start = i;
       }
 
       final prevTops = <double>[
-        for (var j = i - 1; j >= 0 && j >= i - 8; j--)
-          if (!sessions[j].light) sessions[j].top.weightKg,
+        for (var j = i - 1; j >= 0 && j >= i - 8; j--) sessions[j].top.weightKg,
       ].take(4).toList();
       if (prevTops.length >= 2 &&
           s.top.weightKg <= c.lightSessionRatio * _median(prevTops)) {
@@ -508,48 +564,65 @@ class ProgressionEngine {
 
       final window = <_Session>[
         for (var j = start; j < i; j++)
-          if (!sessions[j].light && sessions[j].value != null) sessions[j],
+          if (!sessions[j].light && sessions[j].score != null) sessions[j],
       ];
       final bestFrom = s.date.subtract(Duration(days: c.bestWindowDays));
       final priorBest = window
           .where((p) => !p.date.isBefore(bestFrom))
-          .map((p) => p.value!)
+          .map((p) => p.score!)
           .fold<double?>(null, (m, v) => m == null || v > m ? v : m);
       // The first session of a window is the baseline: neither a best nor
       // a step towards a stall.
       final baseline = priorBest == null;
       s.newBest =
           !baseline &&
-          s.value != null &&
-          s.value! > priorBest * (1 + c.newBestMargin);
+          s.score != null &&
+          s.score! > priorBest * (1 + c.newBestMargin);
       final prevCounted = _lastNonLight(sessions, i);
       final prevInWindow =
           prevCounted != null && sessions.indexOf(prevCounted) >= start;
       s.stallCount = s.newBest || baseline
           ? 0
           : (prevInWindow ? prevCounted.stallCount : 0) + 1;
-      s.stalled = s.stallCount >= c.stallExposures;
+      // Stall: the recent block is no better than the block before it.
+      final counted = [...window, if (s.score != null) s];
+      final recentFrom = s.date.subtract(Duration(days: c.stallDays));
+      final block = math.max(
+        c.stallExposures,
+        counted.where((p) => p.date.isAfter(recentFrom)).length,
+      );
+      if (s.score != null && counted.length >= 2 * block) {
+        double best(Iterable<_Session> xs) =>
+            xs.map((p) => p.score!).reduce(math.max);
+        final recent = counted.sublist(counted.length - block);
+        final before = counted.sublist(
+          counted.length - 2 * block,
+          counted.length - block,
+        );
+        s.stalled = best(recent) <= best(before) * (1 + c.newBestMargin);
+      }
 
       // Regression: this and the previous counted session both clearly
       // below the best of the weeks before them.
-      if (prevInWindow && s.value != null && prevCounted.value != null) {
+      if (prevInWindow && s.score != null && prevCounted.score != null) {
         final regFrom = prevCounted.date.subtract(
           Duration(days: c.regressionWindowDays),
         );
         _Session? ref;
         for (final p in window) {
           if (identical(p, prevCounted) || p.date.isBefore(regFrom)) continue;
-          if (ref == null || p.value! > ref.value!) ref = p;
+          if (ref == null || p.score! > ref.score!) ref = p;
         }
-        // Only a drop at the same or a lighter weight is regression; a
-        // failed attempt at a heavier weight is handled by the rep rules.
+        // Regression means doing worse at the same weight. Lighter sessions
+        // score lower by design, and a failed attempt at a heavier weight is
+        // handled by the rep rules.
         final refWeight = ref?.top.weightKg ?? 0;
-        final heavier =
-            s.top.weightKg > refWeight + 0.001 ||
-            prevCounted.top.weightKg > refWeight + 0.001;
-        if (ref != null && !heavier) {
-          final worst = math.max(s.value!, prevCounted.value!);
-          final drop = 1 - worst / ref.value!;
+        final otherWeight =
+            (s.top.weightKg - refWeight).abs() > 0.001 ||
+            (prevCounted.top.weightKg - refWeight).abs() > 0.001;
+        if (ref != null && !otherWeight) {
+          final worst = math.max(s.score!, prevCounted.score!);
+          final drop = 1 - worst / ref.score!;
           if (drop >= c.regressionDrop) {
             s.regressed = true;
             s.regressionPercent = drop;
@@ -586,6 +659,15 @@ class ProgressionEngine {
       if (!sessions[j].light) return sessions[j];
     }
     return null;
+  }
+
+  /// Median days between the last few sessions.
+  int _usualGap(List<_Session> sessions) {
+    final gaps = <double>[
+      for (var i = math.max(1, sessions.length - 8); i < sessions.length; i++)
+        _days(sessions[i - 1].date, sessions[i].date).toDouble(),
+    ];
+    return gaps.isEmpty ? 0 : _median(gaps).round();
   }
 
   static double _median(List<double> xs) {

@@ -63,8 +63,9 @@ final _climb = [
   ex(14, [(90, 8), (90, 7)]),
 ];
 
-/// Six weekly sessions with no change: a stall.
-final _stalled = flat(6, [(90, 8), (90, 6)]);
+/// Eight weekly sessions with no change: four flat weeks after four flat
+/// weeks is a stall.
+final _stalled = flat(8, [(90, 8), (90, 6)]);
 
 final _cases = <_Case>[
   // ----- Sparse data -----
@@ -84,6 +85,12 @@ final _cases = <_Case>[
   _Case('sets with no weight or reps are ignored', [
     ex(0, [(0, 10), (60, 0)]),
   ], status: CoachStatus.noData),
+
+  _Case(
+    'bodyweight logged as 0.1 kg is not coached',
+    flat(6, [(0.1, 10), (0.1, 9)]),
+    status: CoachStatus.unsupported,
+  ),
 
   // ----- Normal double progression -----
   _Case(
@@ -225,7 +232,7 @@ final _cases = <_Case>[
 
   // ----- Stall and deload -----
   _Case(
-    'six flat weekly sessions: stalled, one-session deload',
+    'eight flat weekly sessions: stalled, one-session deload',
     _stalled,
     status: CoachStatus.stalled,
     action: CoachAction.repeat,
@@ -257,7 +264,7 @@ final _cases = <_Case>[
     'deload done (weekly lifter): resume one step under',
     [
       ..._stalled,
-      ex(42, [(80, 6), (80, 6)]),
+      ex(56, [(80, 6), (80, 6)]),
     ],
     status: CoachStatus.holding,
     action: CoachAction.resume,
@@ -269,8 +276,8 @@ final _cases = <_Case>[
   _Case(
     'deload half done (twice-weekly lifter): deload again',
     [
-      ...flat(8, [(90, 8), (90, 6)], every: 3),
-      ex(24, [(80, 6), (80, 6)]),
+      ...flat(14, [(90, 8), (90, 6)], every: 3),
+      ex(42, [(80, 6), (80, 6)]),
     ],
     status: CoachStatus.deloading,
     action: CoachAction.deload,
@@ -282,9 +289,9 @@ final _cases = <_Case>[
     'after the deload the stall counter starts again',
     [
       ..._stalled,
-      ex(42, [(80, 6), (80, 6)]),
-      ex(49, [(87.5, 8), (87.5, 7)]),
-      ex(56, [(87.5, 8), (87.5, 7)]),
+      ex(56, [(80, 6), (80, 6)]),
+      ex(63, [(87.5, 8), (87.5, 7)]),
+      ex(70, [(87.5, 8), (87.5, 7)]),
     ],
     status: CoachStatus.holding,
     action: CoachAction.addWeight,
@@ -306,6 +313,14 @@ final _cases = <_Case>[
   ),
 
   // ----- Missed sessions -----
+  _Case(
+    '20 days off after a stall: the break was the deload',
+    _stalled,
+    daysAfterLast: 20,
+    status: CoachStatus.holding,
+    action: CoachAction.repeat,
+    weight: 85,
+  ),
   _Case(
     '20 days off: 5% lighter',
     _climb,

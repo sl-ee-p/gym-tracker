@@ -48,6 +48,10 @@ enum CoachStatus {
   /// No usable sets logged yet.
   noData,
 
+  /// Weights are placeholders (e.g. 0.1 kg for a bodyweight pull-up), so
+  /// weight suggestions would be meaningless.
+  unsupported,
+
   /// Fewer than [CoachConfig.baselineExposures] sessions: no trend or stall.
   baseline,
 

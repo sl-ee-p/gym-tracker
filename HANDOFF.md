@@ -10,12 +10,15 @@ Spec: `docs/COACH.md`.
   - Rules refined while testing, now reflected in `docs/COACH.md`: the first session of a window is a baseline; regression only counts at the same or a lighter weight.
   - No UI yet, so there was nothing to check on the emulator.
 
+- **C2:** `tool/coach_backtest.dart` + tuning. Reports are in `~/scratch/coach-backtest/` (personal data, not in the repo). Backups used: the 20 Oct one and the owner's 11 Nov upload (`data/`). Aggregate results in `docs/COACH.md` § Validation. Version 1.1.0+14.
+  - **Paused for the owner's review** of the agreement + wrong-looking cases before the UI.
+
 ## Not verified
 - Italian layout: no IT ARB, by the owner's decision.
 - Pro gating: deferred until `feature/pro-unlock` merges.
 
 ## Next
-- **C2:** `tool/coach_backtest.dart` on the Oct 20 backup, tune `CoachConfig`, report to the owner and pause. Recommended effort: high.
+- **C3:** service + provider + Coach card on Exercise details (sparkline, empty/loading states, light/dark) + why sheet. Recommended effort: medium.
 
 ## Emulator notes
 - a16 now runs the **debug** build (version 1.1.0).
