@@ -8,14 +8,15 @@ Status: in progress on `feature/coach`. Milestones are listed at the end.
 All maths works on **completed** workouts only. A **working set** is non-warm-up, weight > 0, reps ≥ 1; partial reps are ignored. Sessions with an exercise = "exposures". Weights are computed in kg and rounded in the **display unit**.
 
 ### 1. Rep range (learned per exercise)
-- **Top:** `hi` = the 75th percentile of the top set's reps over the last 8 exposures.
+- **Top:** `hi` = the 75th percentile (nearest rank) of the top set's reps over the last 8 exposures.
 - **Bottom:** `lo` = `hi − max(2, round(0.2·hi))`.
 - Example: a lift whose top set usually lands at 7–8 reps gets **6–8**; one at 14–16 gets **13–16**.
 - **Fallback:** 8–12 when there are fewer than 3 exposures.
 
 ### 2. Top set and fragments
-- The **top set** is the first set at the heaviest weight whose reps are ≥ ⌈lo/2⌉.
-- Sets below ⌈lo/2⌉ reps at a lower weight are **fragments**. They are ignored for decisions.
+- **Fragments** are sets with fewer than half the session's best reps (fatigued back-offs and failed tail sets). They are ignored everywhere.
+- The **top set** is the first remaining set at the session's heaviest weight. The **2nd set** is the next remaining set at that weight.
+- A session whose top weight is ≤ 92.5% of the median of the previous 4 non-light top weights is **light**. It is a deload if one was due; otherwise it is ignored and suggestions build on the last normal session.
 
 ### 3. 1RM and trend
 - **Session e1RM** = max Epley over working sets. Taking the max makes fatigued fragments harmless automatically.
@@ -36,7 +37,7 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 | R < lo, once | **Hold W:** target `lo` |
 | R < lo on 2 exposures in a row | **Step back** 1 step, target `hi`−1 |
 
-- **Big relative jumps:** if one step is more than 10% of W (light dumbbells, small cables), extend `hi` by 4 ("add reps first").
+- **Big relative jumps:** if one step is more than 12.5% of W (light dumbbells, small cables), extend `hi` by 4 ("add reps first").
 - **Shown as:** top set plus the 2nd-set target, e.g. "92.5 kg × 6–8, then × 6+".
 
 ### 5. Increments and rounding
@@ -44,7 +45,7 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
   - Step = 2 × the smallest plate (2.5 kg / 5 lb).
   - Round **down** to the nearest weight the bar (`barWeightKg ?? defaultBarWeightKg`) can load, using `PlateCalculator`.
 - **Machine, cable or dumbbell:**
-  - Step = the **learned** step: the most common gap between the adjacent distinct weights this exercise used. Converted to the display unit and snapped to {1, 1.25, 2, 2.5, 5} kg or {2.5, 5, 10} lb.
+  - Step = the **learned** step: the most common gap between the adjacent distinct weights this exercise used in the last 12 weeks (ties go to the smaller gap). Converted to the display unit and snapped to {1, 1.25, 2, 2.5, 5} kg or {2.5, 5, 10} lb.
   - Default when there are fewer than 3 distinct weights: 2.5 kg / 5 lb.
   - The grid is **anchored on a weight actually used**, so 16/18/20 dumbbells and odd stacks stay reachable.
 - **lb users:** history is converted to lb before learning the step, so suggestions land on lb-loadable weights.
@@ -52,13 +53,13 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 ### 6. Stall
 - **Definition:** **4 consecutive exposures** where the best value (e1RM or index) gains ≤ 0.5% over the best of the 12 weeks before them.
 - **Scope:** only exposures within the last 8 weeks count.
-- **Grace:** the counter resets at a deload and at a long layoff (rule 8), with a 3-exposure grace period after either.
+- **Grace:** the comparison window restarts after a deload and after a gap of more than 28 days. The first session of a window is its baseline: it is neither a new best nor a stalled session, so a stall needs 4 flat sessions after it.
 - **UI:** the status chip shows "Stalled".
 
 ### 7. Deload
 - **Trigger** (either):
   - a stall, or
-  - **regression:** 2 consecutive exposures ≥ 5% below the best of the last 6 weeks.
+  - **regression:** 2 consecutive exposures ≥ 5% below the best of the last 6 weeks, both at the same or a lighter weight than that best session. A failed attempt at a heavier weight is handled by the rep rules (hold, then step back), not by a deload.
 - **Size:** −10% of W, rounded **down** to loadable. Same sets, target `lo` reps, with the instruction "leave 2–3 reps in the tank".
 - **Length:** 1 exposure if the exercise is trained ≤ 1×/week, 2 if more often (about a week either way).
 - **Detection is stateless:** an exposure counts as a deload if its top weight is ≤ 92.5% of the median top weight of the previous 4 exposures, while a stall or regression was active. This survives backup and restore, and needs no schema change.
@@ -162,7 +163,7 @@ The backtest's metrics, per exposure in 20 Jul–20 Oct:
 
 Progress:
 - [x] C0: l10n scaffold + this document
-- [ ] C1
+- [x] C1: pure engine (`lib/coach/`) + table-driven tests (`test/coach/`)
 - [ ] C2
 - [ ] C3
 - [ ] C4
