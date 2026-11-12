@@ -22,6 +22,11 @@ Spec: `docs/COACH.md`.
   - TalkBack label: "Fill in 92.5 kg for 8 reps".
 - **C5:** version 1.1.0+16, docs updated.
 
+- **Release (2026-11-12):** AAB 1.1.0+16 built from `feature/coach` and copied to `~/platelog-1.1.0-16.aab`.
+  - Signed with the upload key (SHA-256 80:E6:92:…:FE:52); the R8 mapping is bundled.
+  - Permissions are identical to +11, with no INTERNET.
+  - x86_64 release smoke test on a16 with the owner's restored backup: Coach card, workout row and Use all work, with no errors.
+
 ## Not verified
 - Italian layout: no IT ARB, by the owner's decision.
 - Pro gating: deferred until `feature/pro-unlock` merges.
@@ -30,7 +35,7 @@ Spec: `docs/COACH.md`.
 - The owner reviews the feature on a device. Merge `feature/coach` only when asked.
 - When `feature/pro-unlock` merges: add `ProFeature.coach`, wrap `CoachCard` in `ProGate`, and hide `CoachSuggestionRow` for free users (no paywall on the workout screen).
 - Extras proposed in `docs/COACH.md`: RPE tweak, per-exercise rep-range override, Progress-tab line, weekly digest.
-- Emulator state: a16 runs the **demo** restore (stalled demo exercise) with an in-progress test workout. Restore the owner's backup or discard the workout before reusing it.
+- Emulator state: a16 runs the x86_64 **release** build with the owner's real 11 Nov backup and an in-progress test workout (Chest Press, no sets). Discard it before reusing the emulator.
 
 ## Emulator notes
 - a16 now runs the **debug** build (version 1.1.0).
