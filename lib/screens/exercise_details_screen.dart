@@ -6,6 +6,7 @@ import '../models/exercise.dart';
 import '../providers/exercise_provider.dart';
 import '../utils/app_spacing.dart';
 import '../utils/muscle_region_mapping.dart';
+import '../widgets/coach/coach_card.dart';
 import '../widgets/muscle_map_section.dart';
 import '../widgets/system_nav_bar_spacer.dart';
 
@@ -87,6 +88,9 @@ class ExerciseDetailsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
+              CoachCard(exercise: exercise),
+              const SizedBox(height: AppSpacing.xl),
+
               if (exercise.instructions?.trim().isNotEmpty ?? false) ...[
                 _SectionHeader('Instructions'),
                 const SizedBox(height: AppSpacing.sm),
