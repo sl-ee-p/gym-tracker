@@ -53,9 +53,10 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 
 ### 6. Stall
 - **Definition:** the best score of the **recent block** of sessions is no more than 0.5% above the best score of the **block before it**.
-  - A block covers the last 21 days (so it holds more sessions for lifts trained more often) and never fewer than 4 sessions.
+  - A block covers the last 21 days (so it holds more sessions for lifts trained more often) and never fewer than 5 sessions.
   - Both blocks must fall inside the current comparison window.
 - **Window restarts** after a deload and after any break that earns a "welcome back" cut (rule 8). The first session of a window is its baseline.
+- **No deload call within 14 days of a light session:** the lifter already backed off.
 - **No deload call while the top of the range is being hit:** if the suggestion is "add weight", the lifter needs more load, not a deload.
 - **UI:** the status chip shows "Stalled", and the session count shown is the number of sessions since the last new best.
 
@@ -179,8 +180,8 @@ Run: `dart run tool/coach_backtest.dart <backup.json> <report.md> [from] [to]`. 
 
 | Window | Scored sessions | Decision agrees | Weight exact | Weight within 1 step | Deload episodes |
 |---|---|---|---|---|---|
-| Tuning: 20 Jul–20 Oct (backup of 20 Oct) | 235 | 59% | 52% | 88% | 1 (2 calls, one plateau) |
-| Unseen: 21 Oct–11 Nov (backup of 11 Nov), rules frozen | 71 | 49% | 48% | 93% | 4 |
+| Tuning: 20 Jul–20 Oct (backup of 20 Oct) | 235 | 58% | 51% | 88% | 1 (the one clear plateau) |
+| Unseen: 21 Oct–11 Nov (backup of 11 Nov) | 71 | 49% | 48% | 93% | 0 |
 
 - **Low exact agreement is mostly the lifter's own inconsistency.** The same situation gets "add" one week and "hold" the next.
 - **When the lifter did go up, it worked.** Where the coach said "add weight" and the lifter went up, they still hit the bottom of the rep range 96% (tuning) and 100% (unseen) of the time. They also hit it 95–100% of the time when they went up after "climbing reps".
@@ -192,6 +193,7 @@ Run: `dart run tool/coach_backtest.dart <backup.json> <report.md> [from] [to]`. 
   - regression requires the same weight
   - no deload while "add weight" applies
   - placeholder weights are unsupported
+  - after review: the minimum stall block is 5 sessions, and no deload is called within 14 days of a light session. On the unseen window, 4 calls (1 false alarm, 3 early) became 0, while the real plateau in the tuning window was kept.
 
 Validation data stays outside the repo. The backtest reads a backup path given on the command line and writes its report to `~/scratch/coach-backtest/`, because the report contains personal training data.
 

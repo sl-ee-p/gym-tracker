@@ -19,7 +19,7 @@ class CoachConfig {
     this.ladderWindowDays = 84,
     this.bestWindowDays = 84,
     this.newBestMargin = 0.005,
-    this.stallExposures = 4,
+    this.stallExposures = 5,
     this.stallDays = 21,
     this.regressionWindowDays = 42,
     this.regressionDrop = 0.05,
@@ -31,6 +31,7 @@ class CoachConfig {
     this.longBreakCut = 0.10,
     this.progressingLookback = 3,
     this.minRealWeightKg = 1,
+    this.recentLightDays = 14,
     this.trendLength = 12,
     this.averageWindow = 3,
     this.changeLookbackDays = 28,
@@ -79,6 +80,9 @@ class CoachConfig {
 
   /// Below this every working weight is taken as a placeholder.
   final double minRealWeightKg;
+
+  /// No deload call within this many days of a light session.
+  final int recentLightDays;
   final int trendLength;
   final int averageWindow;
   final int changeLookbackDays;
@@ -415,8 +419,15 @@ class ProgressionEngine {
 
       // Hitting the top of the range means the weight should go up, not
       // that the lifter needs a deload.
+      // A light session in the last two weeks means the lifter already
+      // backed off; calling a deload on top of it would be noise.
+      final recentLight = sessions.any(
+        (s) => s.light && _days(s.date, last.date) <= c.recentLightDays,
+      );
       final flaggedNow =
-          base.flagged && suggestion.action != CoachAction.addWeight;
+          base.flagged &&
+          !recentLight &&
+          suggestion.action != CoachAction.addWeight;
       if (flaggedNow) {
         status = CoachStatus.stalled;
         final trigger = base.stalled
