@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "coachTitle": "Coach",
+  "@coachTitle": {
+    "description": "Title of the progressive-overload coach card and suggestion row."
+  }
+}
