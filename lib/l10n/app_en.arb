@@ -1,0 +1,575 @@
+{
+  "@@locale": "en",
+  "coachTitle": "Coach",
+  "@coachTitle": {
+    "description": "Title of the progressive-overload coach card and suggestion row."
+  },
+  "coachStatusBaseline": "Baseline",
+  "@coachStatusBaseline": {
+    "description": "Status chip: fewer than three sessions logged."
+  },
+  "coachStatusProgressing": "Progressing",
+  "@coachStatusProgressing": {
+    "description": "Status chip: a new best in the last few sessions."
+  },
+  "coachStatusHolding": "Holding",
+  "@coachStatusHolding": {
+    "description": "Status chip: no recent best, but not stalled."
+  },
+  "coachStatusStalled": "Stalled",
+  "@coachStatusStalled": {
+    "description": "Status chip: no progress for weeks; a deload is suggested."
+  },
+  "coachStatusDeloading": "Deload",
+  "@coachStatusDeloading": {
+    "description": "Status chip: in the middle of a deload."
+  },
+  "coachEstimatedOneRepMax": "Estimated 1RM",
+  "@coachEstimatedOneRepMax": {
+    "description": "Label above the estimated one-rep max."
+  },
+  "coachLastTopSet": "Last top set",
+  "@coachLastTopSet": {
+    "description": "Label above the best set of the last session (shown instead of a 1RM for high-rep exercises)."
+  },
+  "coachChangeUp": "+{percent}% in 4 weeks",
+  "@coachChangeUp": {
+    "description": "Trend change, positive.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "coachChangeDown": "−{percent}% in 4 weeks",
+  "@coachChangeDown": {
+    "description": "Trend change, negative.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "coachChangeFlat": "Flat over 4 weeks",
+  "@coachChangeFlat": {
+    "description": "Trend change under 1%."
+  },
+  "coachNextSession": "Next session",
+  "@coachNextSession": {
+    "description": "Heading of the suggestion block."
+  },
+  "coachWeightTimesReps": "{weight} × {reps}",
+  "@coachWeightTimesReps": {
+    "description": "A weight and a rep count, e.g. '92.5 kg × 8'.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRepsRange": "{min}–{max}",
+  "@coachRepsRange": {
+    "description": "A rep range, e.g. '6–8'.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "coachSecondSet": "Set 2: aim for {reps}+",
+  "@coachSecondSet": {
+    "description": "Target for the second set at the same weight.",
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRepRangeLearned": "Rep range {min}–{max}, learned from your sessions",
+  "@coachRepRangeLearned": {
+    "description": "Footer of the suggestion block.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRepRangeDefault": "Rep range {min}–{max} until you have 3 sessions",
+  "@coachRepRangeDefault": {
+    "description": "Footer while the rep range is still the default.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "coachWeightStepLearned": "Weight step {step}, from the weights you use",
+  "@coachWeightStepLearned": {
+    "description": "Why-sheet line about the weight increment on machines and dumbbells.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "coachWeightStepPlates": "Weight step {step}, the smallest plate pair",
+  "@coachWeightStepPlates": {
+    "description": "Why-sheet line about the weight increment on plate-loaded lifts.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "coachWhy": "Why?",
+  "@coachWhy": {
+    "description": "Button that opens the explanation sheet."
+  },
+  "coachWhyTitle": "Why this suggestion",
+  "@coachWhyTitle": {
+    "description": "Title of the explanation sheet."
+  },
+  "coachTrendOneRepMax": "Estimated 1RM, last {count} sessions",
+  "@coachTrendOneRepMax": {
+    "description": "Caption of the chart in the explanation sheet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachTrendIndex": "Strength trend, last {count} sessions",
+  "@coachTrendIndex": {
+    "description": "Caption of the chart for high-rep exercises.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachTrendAverage": "The line is the average of your last 3 sessions.",
+  "@coachTrendAverage": {
+    "description": "Legend for the moving-average line."
+  },
+  "coachEmptyTitle": "No sessions yet",
+  "@coachEmptyTitle": {
+    "description": "Empty state title."
+  },
+  "coachEmptyBody": "Log this exercise in a workout and the coach will suggest your next weight and reps.",
+  "@coachEmptyBody": {
+    "description": "Empty state body."
+  },
+  "coachBaselineTitle": "Building your baseline",
+  "@coachBaselineTitle": {
+    "description": "Title while fewer than three sessions are logged."
+  },
+  "coachBaselineBody": "{count} of {target} sessions logged. Trends and stall checks start after {target}.",
+  "@coachBaselineBody": {
+    "description": "Body while fewer than three sessions are logged.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachUnsupported": "The coach works with weight × reps exercises. This one is timed, unweighted or logged without a real weight.",
+  "@coachUnsupported": {
+    "description": "Shown for exercises the coach can't steer."
+  },
+  "coachStalledBanner": "No progress for {sessions, plural, =1{1 session} other{{sessions} sessions}}",
+  "@coachStalledBanner": {
+    "description": "Stall banner title.",
+    "placeholders": {
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRegressedBanner": "Recent sessions are down {percent}%",
+  "@coachRegressedBanner": {
+    "description": "Regression banner title.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "coachDeloadAdvice": "Deload suggested: {weight} × {reps} for {sessions, plural, =1{1 session} other{{sessions} sessions}}, leaving 2–3 reps in the tank.",
+  "@coachDeloadAdvice": {
+    "description": "Deload recommendation.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachDeloadInProgress": "Deload session {done} of {total}",
+  "@coachDeloadInProgress": {
+    "description": "Banner during a deload.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "coachStartDeload": "Start deload",
+  "@coachStartDeload": {
+    "description": "Accept the suggested deload."
+  },
+  "coachNotNow": "Not now",
+  "@coachNotNow": {
+    "description": "Dismiss a suggestion for this workout."
+  },
+  "coachUse": "Use",
+  "@coachUse": {
+    "description": "Fill the set fields with the suggestion."
+  },
+  "coachLoadError": "Couldn't load the coach. Try again later.",
+  "@coachLoadError": {
+    "description": "Shown if the history can't be read."
+  },
+  "coachReasonBaselineSessions": "Early days: add one rep to what you did last time.",
+  "@coachReasonBaselineSessions": {
+    "description": "Reason while fewer than three sessions are logged (the card already shows the count)."
+  },
+  "coachReasonHitTopOfRange": "Last time you hit {weight} × {reps}, the top of your range. Time to add weight.",
+  "@coachReasonHitTopOfRange": {
+    "description": "Reason.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonSecondSetShort": "Your first set reached the top of the range, but set 2 needs {target} reps before the weight goes up.",
+  "@coachReasonSecondSetShort": {
+    "description": "Reason.",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonClimbingReps": "Last time you did {reps} reps. Add one more before adding weight; your range tops out at {target}.",
+  "@coachReasonClimbingReps": {
+    "description": "Reason.",
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonBelowRange": "Last time you did {reps} reps, below your range. Keep the weight and aim for {target}.",
+  "@coachReasonBelowRange": {
+    "description": "Reason.",
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonMissedTwice": "Two sessions in a row under {target} reps at this weight. Drop one step and build back up.",
+  "@coachReasonMissedTwice": {
+    "description": "Reason.",
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonBigStepRepsFirst": "The next weight is a big jump ({step}), so build up to {target} reps first.",
+  "@coachReasonBigStepRepsFirst": {
+    "description": "Reason.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonStalled": "No new best in {sessions, plural, =1{1 session} other{{sessions} sessions}}.",
+  "@coachReasonStalled": {
+    "description": "Reason.",
+    "placeholders": {
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonRegressed": "Your recent sessions are {percent}% below your best at this weight.",
+  "@coachReasonRegressed": {
+    "description": "Reason.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "coachReasonDeloadContinue": "Deload session {sessions} of {target} done. Keep this one light too.",
+  "@coachReasonDeloadContinue": {
+    "description": "Reason.",
+    "placeholders": {
+      "sessions": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonDeloadDone": "Deload done. Restart just under your previous {weight}.",
+  "@coachReasonDeloadDone": {
+    "description": "Reason.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "coachReasonLightSessionIgnored": "Your last session ({weight}) looked like a light day, so the suggestion builds on the one before.",
+  "@coachReasonLightSessionIgnored": {
+    "description": "Reason.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "coachReasonWelcomeBack": "{days} days since you last trained this, so start {percent}% lighter.",
+  "@coachReasonWelcomeBack": {
+    "description": "Reason.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRowTopSet": "Coach · top set",
+  "@coachRowTopSet": {
+    "description": "Label of the workout-screen suggestion before any working set is logged."
+  },
+  "coachRowSet": "Coach · set {number}",
+  "@coachRowSet": {
+    "description": "Label of the workout-screen suggestion for a later set.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRowDeload": "Coach · deload",
+  "@coachRowDeload": {
+    "description": "Label of the workout-screen suggestion while deloading."
+  },
+  "coachUseSemantics": "Fill in {weight} for {reps} reps",
+  "@coachUseSemantics": {
+    "description": "Screen-reader label of the Use button.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "coachSettingTitle": "Coach",
+  "@coachSettingTitle": {
+    "description": "Settings switch that turns the progressive-overload coach on or off."
+  },
+  "coachSettingSubtitle": "Suggests weights and reps from your history",
+  "@coachSettingSubtitle": {
+    "description": "Subtitle of the coach switch in Settings."
+  },
+  "coachReasonFeedbackEasier": "You rated {agreeing} of your last {sessions} suggestions too hard, so weight now goes up only after both sets reach the top of the range.",
+  "@coachReasonFeedbackEasier": {
+    "description": "Reason: the lifter's ratings made the coach more careful.",
+    "placeholders": {
+      "agreeing": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonFeedbackHarder": "You rated {agreeing} of your last {sessions} suggestions too easy, so weight now goes up one rep short of the top of the range.",
+  "@coachReasonFeedbackHarder": {
+    "description": "Reason: the lifter's ratings made the coach push harder.",
+    "placeholders": {
+      "agreeing": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonPriorEasier": "You often rate other exercises too hard, so this one adds weight carefully too.",
+  "@coachReasonPriorEasier": {
+    "description": "Reason: no ratings for this exercise yet; the ratings of other exercises made the coach more careful."
+  },
+  "coachReasonPriorHarder": "You often rate other exercises too easy, so this one adds weight sooner too.",
+  "@coachReasonPriorHarder": {
+    "description": "Reason: no ratings for this exercise yet; the ratings of other exercises made the coach push harder."
+  },
+  "coachReasonLastTooHard": "Last time you did {weight} × {reps}, the top of your range, but rated it too hard. The weight stays the same until it feels right.",
+  "@coachReasonLastTooHard": {
+    "description": "Reason: the last session was rated too hard, so the coach holds the weight instead of adding some.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonLastTooEasy": "Last time you did {weight} × {reps} and rated it too easy, so the weight goes up now.",
+  "@coachReasonLastTooEasy": {
+    "description": "Reason: the last session was rated too easy, so the coach adds weight instead of holding it.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "coachRateQuestion": "How did {target} feel?",
+  "@coachRateQuestion": {
+    "description": "Asked in the workout row after a set, about the coach's top-set suggestion, e.g. \"How did 92.5 kg × 6–8 feel?\".",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRateTooEasy": "Too easy",
+  "@coachRateTooEasy": {
+    "description": "Rating chip: the suggestion was too light."
+  },
+  "coachRateRight": "About right",
+  "@coachRateRight": {
+    "description": "Rating chip: the suggestion fit."
+  },
+  "coachRateTooHard": "Too hard",
+  "@coachRateTooHard": {
+    "description": "Rating chip: the suggestion was too heavy."
+  },
+  "coachRateSemantics": "Rate {target} as {rating}",
+  "@coachRateSemantics": {
+    "description": "Screen-reader label of a rating chip, e.g. \"Rate 92.5 kg × 6–8 as too hard\".",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRatedNoted": "Noted: {rating}. The coach uses it from your next session.",
+  "@coachRatedNoted": {
+    "description": "Shown after rating the suggestion.",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRateChange": "Change",
+  "@coachRateChange": {
+    "description": "Button that reopens the rating chips."
+  },
+  "coachLearnedTitle": "What the coach learned",
+  "@coachLearnedTitle": {
+    "description": "Why sheet: heading of the section about the lifter's ratings."
+  },
+  "coachLearnedNone": "After your sets, rate the suggestion (too easy, about right or too hard) and the coach tunes itself to you.",
+  "@coachLearnedNone": {
+    "description": "Why sheet: no ratings yet."
+  },
+  "coachLearnedCareful": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up more carefully for you.",
+  "@coachLearnedCareful": {
+    "description": "Why sheet: ratings lean \"too hard\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachLearnedStandard": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Not a clear lean either way yet, so the standard rules apply; your latest rating still counts.",
+  "@coachLearnedStandard": {
+    "description": "Why sheet: ratings don't lean either way enough to change the rules.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachLearnedPush": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up sooner for you.",
+  "@coachLearnedPush": {
+    "description": "Why sheet: ratings lean \"too easy\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachTunedToRatings": "Tuned to your ratings",
+  "@coachTunedToRatings": {
+    "description": "Coach card: the suggestion was changed by the lifter's ratings."
+  },
+  "coachReasonMissedEaseOff": "Last time you did {reps} reps, under your target of {target}. Your ratings say ease off, so drop one step and build back up.",
+  "@coachReasonMissedEaseOff": {
+    "description": "Reason: one session below the range, and the lifter's ratings lean \"too hard\", so the coach steps back right away.",
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  }
+}

@@ -57,6 +57,7 @@ class UserProvider extends ChangeNotifier {
   bool get rpeEnabled => _userProfile?.rpeEnabled ?? false;
   bool get notificationSoundEnabled =>
       _userProfile?.notificationSoundEnabled ?? true;
+  bool get coachEnabled => _userProfile?.coachEnabled ?? true;
 
   ReminderSchedule get workoutReminder => ReminderSchedule.parse(
         _userProfile?.workoutReminderDays,
@@ -284,6 +285,14 @@ class UserProvider extends ChangeNotifier {
     await _persist(
       _userProfile!.copyWith(rpeEnabled: enabled),
       'RPE setting',
+    );
+  }
+
+  Future<void> updateCoachEnabled(bool enabled) async {
+    if (_userProfile == null) return;
+    await _persist(
+      _userProfile!.copyWith(coachEnabled: enabled),
+      'coach setting',
     );
   }
 

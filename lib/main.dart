@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'l10n/app_localizations.dart';
+import 'providers/coach_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/exercise_provider.dart';
 import 'providers/workout_provider.dart';
@@ -40,6 +42,18 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ExerciseProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutProvider()),
         ChangeNotifierProvider(create: (_) => ProgressProvider()),
+        // Reports go stale whenever workouts or the unit/bar settings change;
+        // the provider reloads only the exercises currently on screen.
+        ChangeNotifierProxyProvider2<UserProvider, WorkoutProvider,
+            CoachProvider>(
+          create: (_) => CoachProvider(),
+          update: (_, user, workouts, coach) => coach!
+            ..update(
+              unit: user.weightUnit,
+              defaultBarWeightKg: user.defaultBarWeightKg,
+              enabled: user.coachEnabled,
+            ),
+        ),
         // Left lazy: the first read is the workout screen's header pill, long
         // after UserProvider.initialize() has loaded the persisted duration,
         // and no timer can be running before something has constructed this.
@@ -64,6 +78,10 @@ class MyApp extends StatelessWidget {
         builder: (context, userProvider, child) {
           return MaterialApp(
             title: 'PlateLog',
+            // Generated from lib/l10n/*.arb. Only English ships today, so
+            // supportedLocales is just [en]; a new ARB file adds a language.
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             // Custom colours are stored per brightness, so light and dark can
             // be tuned independently — the same accent rarely works in both.
             // Null values fall through to AppTheme's built-in palette.

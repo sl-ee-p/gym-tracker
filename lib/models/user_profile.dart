@@ -60,6 +60,9 @@ class UserProfile {
   /// reminders make a sound. Vibration is unaffected.
   bool notificationSoundEnabled;
 
+  /// Whether the progressive-overload coach shows its card and workout row.
+  bool coachEnabled;
+
   /// Goal body weight in kg. Null means no goal.
   double? targetWeight;
 
@@ -102,6 +105,7 @@ class UserProfile {
     this.partialRepsEnabled = false,
     this.rpeEnabled = false,
     this.notificationSoundEnabled = true,
+    this.coachEnabled = true,
     this.targetWeight,
     this.targetWeightStart,
     this.workoutReminderDays,
@@ -133,6 +137,7 @@ class UserProfile {
       'partialRepsEnabled': partialRepsEnabled ? 1 : 0,
       'rpeEnabled': rpeEnabled ? 1 : 0,
       'notificationSoundEnabled': notificationSoundEnabled ? 1 : 0,
+      'coachEnabled': coachEnabled ? 1 : 0,
       'targetWeight': targetWeight,
       'targetWeightStart': targetWeightStart,
       'workoutReminderDays': workoutReminderDays,
@@ -169,6 +174,8 @@ class UserProfile {
       rpeEnabled: map['rpeEnabled'] == 1,
       // Defaults to on: rows written before v9 have the column's DEFAULT 1.
       notificationSoundEnabled: map['notificationSoundEnabled'] != 0,
+      // Defaults to on: rows written before v10 have the column's DEFAULT 1.
+      coachEnabled: map['coachEnabled'] != 0,
       targetWeight: map['targetWeight']?.toDouble(),
       targetWeightStart: map['targetWeightStart']?.toDouble(),
       workoutReminderDays: map['workoutReminderDays'],
@@ -204,6 +211,7 @@ class UserProfile {
     bool? partialRepsEnabled,
     bool? rpeEnabled,
     bool? notificationSoundEnabled,
+    bool? coachEnabled,
     double? targetWeight,
     double? targetWeightStart,
     String? workoutReminderDays,
@@ -253,6 +261,7 @@ class UserProfile {
       rpeEnabled: rpeEnabled ?? this.rpeEnabled,
       notificationSoundEnabled:
           notificationSoundEnabled ?? this.notificationSoundEnabled,
+      coachEnabled: coachEnabled ?? this.coachEnabled,
       // Clearing the goal clears its starting point too: a start without a
       // target means nothing.
       targetWeight:

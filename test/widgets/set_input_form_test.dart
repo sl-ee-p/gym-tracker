@@ -102,6 +102,55 @@ void main() {
       expect(find.text('Start Rest Timer'), findsNothing);
       expect(find.text('Set added successfully!'), findsOneWidget);
     });
+
+    testWidgets('offers no rest action while a rest is already running',
+        (tester) async {
+      await tester.pumpWidget(host(SetInputForm(
+        exercise: exercise,
+        onSetAdded: (weight, reps, duration, notes, isWarmup, partialReps, rpe) {},
+        onRestTimerRequested: () {},
+        isRestTimerActive: () => true,
+      )));
+
+      await fillAndSubmit(tester);
+
+      expect(find.text('Start Rest Timer'), findsNothing);
+      expect(find.text('Set added successfully!'), findsOneWidget);
+    });
+
+    testWidgets('no Quick Rest either while a rest is running', (tester) async {
+      await tester.pumpWidget(host(SetInputForm(
+        exercise: exercise,
+        onSetAdded: (weight, reps, duration, notes, isWarmup, partialReps, rpe) {},
+        onRestTimerRequested: () {},
+        isLastInGroup: false,
+        onQuickRestRequested: () {},
+        isRestTimerActive: () => true,
+      )));
+
+      await fillAndSubmit(tester);
+
+      expect(find.text('Quick Rest (20s)'), findsNothing);
+      expect(find.text('Set added successfully!'), findsOneWidget);
+    });
+
+    testWidgets('the "Start Rest Timer" SnackBar goes away by itself',
+        (tester) async {
+      await tester.pumpWidget(host(SetInputForm(
+        exercise: exercise,
+        onSetAdded: (weight, reps, duration, notes, isWarmup, partialReps, rpe) {},
+        onRestTimerRequested: () {},
+        isRestTimerActive: () => false,
+      )));
+
+      await fillAndSubmit(tester);
+      await tester.pumpAndSettle(); // entrance; the countdown starts after
+      expect(find.text('Start Rest Timer'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.text('Start Rest Timer'), findsNothing);
+    });
   });
 
   group('SetInputForm partial reps and RPE', () {

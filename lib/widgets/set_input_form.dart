@@ -32,6 +32,19 @@ class SetInputForm extends StatefulWidget {
   /// full rest-timer picker.
   final VoidCallback? onQuickRestRequested;
 
+  /// True while a rest is already running or paused. The SnackBar then
+  /// offers neither rest action: starting another would restart the one
+  /// the user is in.
+  final bool Function()? isRestTimerActive;
+
+  /// Optional content shown above the fields (the coach's suggestion row).
+  /// It gets [apply], which fills the weight (kilograms) and reps fields.
+  /// Nothing fills them unless the user taps something that calls [apply]:
+  /// see the note on [_SetInputFormState] about not pre-filling.
+  final Widget Function(
+          void Function(double weightKg, int reps) apply)?
+      suggestionBuilder;
+
   const SetInputForm({
     super.key,
     required this.exercise,
@@ -39,6 +52,8 @@ class SetInputForm extends StatefulWidget {
     this.onRestTimerRequested,
     this.isLastInGroup = true,
     this.onQuickRestRequested,
+    this.isRestTimerActive,
+    this.suggestionBuilder,
   });
 
   @override
@@ -64,6 +79,16 @@ class _SetInputFormState extends State<SetInputForm> {
   // was never reliably empty, and it was far too easy to log a set you hadn't
   // actually re-entered. The previous sets stay visible in the exercise's
   // sets card.
+
+  /// Fills weight and reps on an explicit user action (the coach's "Use").
+  void _applySuggestion(double weightKg, int reps) {
+    final unit = context.read<UserProvider>().weightUnit;
+    setState(() {
+      _weightController.text = formatWeightValue(weightKg, unit: unit);
+      _repsController.text = '$reps';
+      _isWarmup = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -121,6 +146,8 @@ class _SetInputFormState extends State<SetInputForm> {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (widget.suggestionBuilder != null)
+                widget.suggestionBuilder!(_applySuggestion),
 
               // crossAxisAlignment.start, plus the reserved error line every
               // field below carries, is what keeps these two inputs aligned.
@@ -404,8 +431,11 @@ class _SetInputFormState extends State<SetInputForm> {
     // override — this uses the theme's default inverseSurface SnackBar
     // styling; the new row's own settle-in animation (ExerciseSetsCard) is
     // the visible "this landed" signal, not the SnackBar's color.
-    final onRestTimerRequested = widget.onRestTimerRequested;
-    final onQuickRestRequested = widget.onQuickRestRequested;
+    final resting = widget.isRestTimerActive?.call() ?? false;
+    final onRestTimerRequested = resting ? null : widget.onRestTimerRequested;
+    final onQuickRestRequested = resting ? null : widget.onQuickRestRequested;
+    // `persist: false` on the action SnackBars: with an action, Flutter
+    // otherwise keeps them up until dismissed, across screens.
     if (!widget.isLastInGroup) {
       // Mid-superset/circuit: the next exercise is up immediately, so this
       // never opens the full rest-timer picker — only the shortened Quick
@@ -415,6 +445,7 @@ class _SetInputFormState extends State<SetInputForm> {
           SnackBar(
             content: const Text('Set added — on to the next exercise'),
             duration: const Duration(seconds: 3),
+            persist: false,
             action: SnackBarAction(
               label: 'Quick Rest (20s)',
               onPressed: onQuickRestRequested,
@@ -434,6 +465,7 @@ class _SetInputFormState extends State<SetInputForm> {
         SnackBar(
           content: const Text('Set added successfully!'),
           duration: const Duration(seconds: 3),
+          persist: false,
           action: SnackBarAction(
             label: 'Start Rest Timer',
             onPressed: onRestTimerRequested,
