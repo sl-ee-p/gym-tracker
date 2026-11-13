@@ -32,6 +32,11 @@ class SetInputForm extends StatefulWidget {
   /// full rest-timer picker.
   final VoidCallback? onQuickRestRequested;
 
+  /// True while a rest is already running or paused. The SnackBar then
+  /// offers neither rest action: starting another would restart the one
+  /// the user is in.
+  final bool Function()? isRestTimerActive;
+
   /// Optional content shown above the fields (the coach's suggestion row).
   /// It gets [apply], which fills the weight (kilograms) and reps fields.
   /// Nothing fills them unless the user taps something that calls [apply]:
@@ -47,6 +52,7 @@ class SetInputForm extends StatefulWidget {
     this.onRestTimerRequested,
     this.isLastInGroup = true,
     this.onQuickRestRequested,
+    this.isRestTimerActive,
     this.suggestionBuilder,
   });
 
@@ -425,8 +431,11 @@ class _SetInputFormState extends State<SetInputForm> {
     // override — this uses the theme's default inverseSurface SnackBar
     // styling; the new row's own settle-in animation (ExerciseSetsCard) is
     // the visible "this landed" signal, not the SnackBar's color.
-    final onRestTimerRequested = widget.onRestTimerRequested;
-    final onQuickRestRequested = widget.onQuickRestRequested;
+    final resting = widget.isRestTimerActive?.call() ?? false;
+    final onRestTimerRequested = resting ? null : widget.onRestTimerRequested;
+    final onQuickRestRequested = resting ? null : widget.onQuickRestRequested;
+    // `persist: false` on the action SnackBars: with an action, Flutter
+    // otherwise keeps them up until dismissed, across screens.
     if (!widget.isLastInGroup) {
       // Mid-superset/circuit: the next exercise is up immediately, so this
       // never opens the full rest-timer picker — only the shortened Quick
@@ -436,6 +445,7 @@ class _SetInputFormState extends State<SetInputForm> {
           SnackBar(
             content: const Text('Set added — on to the next exercise'),
             duration: const Duration(seconds: 3),
+            persist: false,
             action: SnackBarAction(
               label: 'Quick Rest (20s)',
               onPressed: onQuickRestRequested,
@@ -455,6 +465,7 @@ class _SetInputFormState extends State<SetInputForm> {
         SnackBar(
           content: const Text('Set added successfully!'),
           duration: const Duration(seconds: 3),
+          persist: false,
           action: SnackBarAction(
             label: 'Start Rest Timer',
             onPressed: onRestTimerRequested,

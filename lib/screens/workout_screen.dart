@@ -748,6 +748,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 onQuickRestRequested: () => context
                     .read<RestTimerController>()
                     .start(RestTimerController.quickRestDuration),
+                isRestTimerActive: () {
+                  final timer = context.read<RestTimerController>();
+                  return timer.isRunning || timer.isPaused;
+                },
                 suggestionBuilder: (apply) => CoachSuggestionRow(
                   exercise: exercise,
                   workoutId: workoutProvider.activeWorkout?.id,
