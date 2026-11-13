@@ -1,6 +1,6 @@
 # Progressive-overload coach
 
-The coach reads an exercise's logged history and does four things. It estimates the 1RM trend and suggests the next session's weight and reps. It also flags stalls and recommends a deload. All of it is pure maths on existing data: there is no schema change, and the coach stores no state.
+The coach reads an exercise's logged history and does four things. It estimates the 1RM trend and suggests the next session's weight and reps. It also flags stalls and recommends a deload. All of it is pure maths on existing data. The only state is the lifter's optional ratings (§ 8b, schema v10).
 
 Status: built on `feature/coach` (C0–C5), not merged. Free for now; see Free vs Pro for the gating follow-up.
 
@@ -82,6 +82,17 @@ Take the last exposure's top weight W and top reps R, plus R2 = reps of the 2nd 
 | Working weights all below 1 kg (bodyweight logged as 0.1 kg) | Status `unsupported`, same as above |
 | Sets of deleted exercises, in-progress workout | Ignored |
 | RPE | Not used in v1 (only 200 sets). Listed as an extra |
+
+### 8b. Feedback (v1.2, `feature/coach-feedback`)
+After logging sets, the lifter can rate the suggestion: **Too easy / About right / Too hard** (+1 / 0 / −1). Ratings live in the `coach_feedback` table (schema v10, one row per workout and exercise, included in backups). Deload sessions are never rated.
+
+- **Logged signal:** if the top set was lifted at the rated weight, ±0.5 is added when it landed above `repsMax` or below `repsMin`. "Too hard" with every rep made therefore counts for less, and "About right" with the range missed leans easier.
+- **Calibration `b`** (−2…+2): the recency-weighted mean of the last 6 ratings (each older one × 0.75), × 2, × confidence `min(1, n/3)`. The rest of the weight goes to the **prior**, which is half of what the lifter's last 20 ratings on other exercises would give. A new exercise leans the way the others do.
+- **`b ≤ −1` (ease off):** weight goes up only when set 2 also reaches the top (slack 0), never two steps at once, and one miss below the range steps back.
+- **`b ≥ +1` (push):** one rep short of the top is enough to add weight, set 2 may be 2 short, and two steps come from `hi+2`.
+- **Last rating acts directly:** "too easy" on the session the suggestion builds on turns a hold or add-reps into add weight; "too hard" after an add-weight holds the weight.
+- **Explanations:** reason codes `feedbackAdjusted` (counts + direction) and `lastRating`.
+- **No feedback = the stateless rules exactly.** The backtest reports for both windows are byte-identical before and after this change.
 
 ### 9. "Why" explanations
 The engine returns **reason codes + numbers** (e.g. `hitTopOfRange{w, r, hi, step}`), never text. The UI maps them to ARB strings, so the pure layer stays text-free and translatable later.

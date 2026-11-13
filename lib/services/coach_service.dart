@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../coach/coach_models.dart';
 import '../coach/progression_engine.dart';
 import '../models/exercise.dart';
@@ -38,6 +40,10 @@ class CoachService {
       );
     }
     final rows = await _repository.getExerciseProgressData(exercise.id!);
+    final feedback = await _repository.getCoachFeedback(exercise.id!);
+    final others = await _repository.getRecentCoachRatings(
+      excludeExerciseId: exercise.id!,
+    );
     return engine.analyze(
       exposuresFromRows(rows),
       now: now ?? DateTime.now(),
@@ -47,7 +53,18 @@ class CoachService {
               barWeightKg: exercise.barWeightKg ?? defaultBarWeightKg,
             )
           : const CoachEquipment.stack(),
+      feedback: feedback,
+      prior: priorFrom(others, engine.config),
     );
+  }
+
+  /// Half of what the lifter's ratings on other exercises would make the
+  /// calibration: a new exercise leans the way the others do, gently.
+  static double priorFrom(List<int> ratings, CoachConfig config) {
+    if (ratings.isEmpty) return 0;
+    final mean = ratings.reduce((a, b) => a + b) / ratings.length;
+    final confidence = math.min(1.0, ratings.length / config.feedbackFullCount);
+    return 0.5 * 2 * mean * confidence;
   }
 
   /// Groups progress rows (ordered by workout date, then set number) into

@@ -162,6 +162,8 @@ class CoachWhySheet extends StatelessWidget {
     CoachReasonCode.welcomeBack => Icons.waving_hand_outlined,
     CoachReasonCode.lightSessionIgnored => Icons.filter_alt_outlined,
     CoachReasonCode.baselineSessions => Icons.flag_outlined,
+    CoachReasonCode.feedbackAdjusted ||
+    CoachReasonCode.lastRating => Icons.tune,
   };
 }
 

@@ -39,10 +39,12 @@ void main() {
   });
 
   /// One workout [day] days after day 0 with [sets] for exercise 1.
-  Future<void> log(
+  /// Returns the workout id.
+  Future<int> log(
     int day,
     List<(double, int, bool)> sets, {
     bool completed = true,
+    int exerciseId = 1,
   }) async {
     final date = day0.add(Duration(days: day));
     final workoutId = await repo.insertWorkout(
@@ -53,7 +55,7 @@ void main() {
       await repo.insertSet(
         ExerciseSet(
           workoutSessionId: workoutId,
-          exerciseId: 1,
+          exerciseId: exerciseId,
           setNumber: n,
           weight: w,
           reps: r,
@@ -62,7 +64,27 @@ void main() {
         ),
       );
     }
+    return workoutId;
   }
+
+  Future<void> rate(
+    int workoutId,
+    int day,
+    CoachRating rating, {
+    int exerciseId = 1,
+    double weightKg = 90,
+  }) => repo.upsertCoachFeedback(
+    workoutSessionId: workoutId,
+    exerciseId: exerciseId,
+    feedback: CoachFeedback(
+      date: day0.add(Duration(days: day)),
+      action: CoachAction.addWeight,
+      weightKg: weightKg,
+      repsMin: 6,
+      repsMax: 8,
+      rating: rating,
+    ),
+  );
 
   Exercise machine() => Exercise(id: 1, name: 'Chest Press', categoryId: 1);
 
@@ -154,5 +176,67 @@ void main() {
     expect(exposures, hasLength(2));
     expect(exposures.first.sets.single.weightKg, 80);
     expect(exposures.last.date, DateTime(2026, 9, 5, 18));
+  });
+
+  group('feedback', () {
+    Future<CoachReport> report() => CoachService().reportFor(
+      machine(),
+      unit: 'kg',
+      defaultBarWeightKg: 20,
+      now: day0.add(const Duration(days: 17)),
+    );
+
+    Future<int> climb() async {
+      await log(0, [(85, 8, false), (85, 7, false)]);
+      await log(7, [(87.5, 8, false), (87.5, 7, false)]);
+      return log(14, [(90, 8, false), (90, 7, false)]);
+    }
+
+    test('"too hard" on the last workout holds the weight; changing the '
+        'answer replaces it', () async {
+      final last = await climb();
+
+      await rate(last, 14, CoachRating.tooHard);
+      expect(await repo.getCoachRating(last, 1), CoachRating.tooHard);
+      var r = await report();
+      expect(r.suggestion!.action, CoachAction.repeat);
+      expect(r.suggestion!.weight, 90);
+      expect(r.feedbackCount, 1);
+
+      await rate(last, 14, CoachRating.right);
+      expect(await repo.getCoachRating(last, 1), CoachRating.right);
+      expect(await db.query('coach_feedback'), hasLength(1));
+      r = await report();
+      expect(r.suggestion!.action, CoachAction.addWeight);
+      expect(r.suggestion!.weight, 92.5);
+    });
+
+    test(
+      'a rating in the workout in progress waits for it to finish',
+      () async {
+        await climb();
+        final open = await log(16, [(92.5, 8, false)], completed: false);
+        await rate(open, 16, CoachRating.tooHard, weightKg: 92.5);
+
+        final r = await report();
+        expect(r.feedbackCount, 0);
+        expect(r.calibration, 0);
+      },
+    );
+
+    test('ratings on other exercises lean a new one the same way', () async {
+      await climb();
+      for (final d in [1, 8, 15]) {
+        final w = await log(d, [(50, 10, false)], exerciseId: 2);
+        await rate(w, d, CoachRating.tooHard, exerciseId: 2, weightKg: 50);
+      }
+
+      final r = await report();
+      expect(r.feedbackCount, 0);
+      expect(r.calibration, -1);
+      // Easing off: set 2 must reach the top before the weight goes up.
+      expect(r.suggestion!.action, CoachAction.repeat);
+      expect(r.suggestion!.secondSetReps, 8);
+    });
   });
 }

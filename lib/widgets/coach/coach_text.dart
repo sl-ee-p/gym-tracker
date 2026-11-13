@@ -83,7 +83,24 @@ class CoachText {
         r.days ?? 0,
         percent(r.percent ?? 0),
       ),
+      CoachReasonCode.feedbackAdjusted => _feedback(r),
+      CoachReasonCode.lastRating =>
+        (r.direction ?? 0) > 0
+            ? l10n.coachReasonLastTooEasy
+            : l10n.coachReasonLastTooHard,
     };
+  }
+
+  String _feedback(CoachReason r) {
+    final harder = (r.direction ?? 0) > 0;
+    final sessions = r.sessions ?? 0;
+    if (sessions == 0) {
+      return harder ? l10n.coachReasonPriorHarder : l10n.coachReasonPriorEasier;
+    }
+    final agreeing = r.reps ?? 0;
+    return harder
+        ? l10n.coachReasonFeedbackHarder(agreeing, sessions)
+        : l10n.coachReasonFeedbackEasier(agreeing, sessions);
   }
 
   /// The most specific reason, for the one-line summary under a suggestion.

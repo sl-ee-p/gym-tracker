@@ -119,6 +119,15 @@ enum CoachReasonCode {
 
   /// days since the last session, percent = reduction applied.
   welcomeBack,
+
+  /// The lifter's ratings changed the rules. sessions = recent ratings
+  /// counted, reps = how many of them pointed in [CoachReason.direction]
+  /// (1 = too easy, so the coach pushes; -1 = too hard, so it eases off).
+  feedbackAdjusted,
+
+  /// The last session was rated: direction 1 = too easy (weight goes up
+  /// now), -1 = too hard (the weight holds).
+  lastRating,
 }
 
 class CoachReason {
@@ -131,6 +140,7 @@ class CoachReason {
     this.sessions,
     this.days,
     this.percent,
+    this.direction,
   });
 
   final CoachReasonCode code;
@@ -143,9 +153,45 @@ class CoachReason {
   final int? sessions;
   final int? days;
   final double? percent;
+  final int? direction;
 
   @override
   String toString() => 'CoachReason(${code.name})';
+}
+
+/// How a suggestion felt, as the lifter rated it after their sets.
+enum CoachRating {
+  tooEasy(1),
+  right(0),
+  tooHard(-1);
+
+  const CoachRating(this.value);
+
+  /// Stored in the database; also the direction of the signal.
+  final int value;
+
+  static CoachRating fromValue(int value) =>
+      values.firstWhere((r) => r.value == value, orElse: () => right);
+}
+
+/// One rating, with the suggestion it was about. [date] is the rated
+/// workout's date, which is how the engine finds what was actually lifted.
+class CoachFeedback {
+  const CoachFeedback({
+    required this.date,
+    required this.action,
+    required this.weightKg,
+    required this.repsMin,
+    required this.repsMax,
+    required this.rating,
+  });
+
+  final DateTime date;
+  final CoachAction action;
+  final double weightKg;
+  final int repsMin;
+  final int repsMax;
+  final CoachRating rating;
 }
 
 class CoachSuggestion {
@@ -239,6 +285,8 @@ class CoachReport {
     this.changePercent,
     this.lastTopSet,
     this.stalledSessions = 0,
+    this.calibration = 0,
+    this.feedbackCount = 0,
   });
 
   final CoachStatus status;
@@ -263,6 +311,13 @@ class CoachReport {
   final double? changePercent;
   final CoachSet? lastTopSet;
   final int stalledSessions;
+
+  /// How the lifter's ratings tune this exercise, from -2 (ease off) to 2
+  /// (push harder). 0 without feedback. See docs/COACH.md § Feedback.
+  final double calibration;
+
+  /// Ratings for this exercise that the calibration counted.
+  final int feedbackCount;
 
   double? get latestValueKg => trend.isEmpty ? null : trend.last.valueKg;
 }

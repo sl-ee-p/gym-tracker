@@ -467,4 +467,276 @@ void main() {
       expect(r.exposures, 20);
     });
   });
+
+  group('ProgressionEngine feedback', () {
+    /// A rating of the workout on [day], about [weight] for [lo]-[hi] reps.
+    CoachFeedback fb(
+      int day,
+      CoachRating rating, {
+      double weight = 90,
+      int lo = 6,
+      int hi = 8,
+      CoachAction action = CoachAction.addWeight,
+    }) => CoachFeedback(
+      date: _day0.add(Duration(days: day)),
+      action: action,
+      weightKg: weight,
+      repsMin: lo,
+      repsMax: hi,
+      rating: rating,
+    );
+
+    /// Like [_climb], but the last session stops one rep short: "add reps".
+    final oneShort = [
+      ex(0, [(85, 8), (85, 7)]),
+      ex(7, [(87.5, 8), (87.5, 7)]),
+      ex(14, [(90, 7), (90, 6)]),
+    ];
+
+    /// Like [_climb], but the last session misses the bottom of the range.
+    final missed = [
+      ex(0, [(85, 8), (85, 7)]),
+      ex(7, [(87.5, 8), (87.5, 7)]),
+      ex(14, [(90, 5), (90, 5)]),
+    ];
+
+    final tooHardBefore = [
+      fb(0, CoachRating.tooHard, weight: 85),
+      fb(7, CoachRating.tooHard, weight: 87.5),
+      fb(14, CoachRating.right),
+    ];
+    final tooEasyBefore = [
+      fb(0, CoachRating.tooEasy, weight: 85),
+      fb(7, CoachRating.tooEasy, weight: 87.5),
+      fb(14, CoachRating.right),
+    ];
+
+    final cases =
+        <
+          ({
+            String name,
+            List<CoachExposure> history,
+            List<CoachFeedback> feedback,
+            double prior,
+            CoachAction action,
+            double weight,
+            int? secondSet,
+            CoachReasonCode? reason,
+            int? direction,
+          })
+        >[
+          (
+            name: 'no feedback: the stateless rules',
+            history: _climb,
+            feedback: const [],
+            prior: 0,
+            action: CoachAction.addWeight,
+            weight: 92.5,
+            secondSet: null,
+            reason: null,
+            direction: null,
+          ),
+          (
+            name: 'last session "too hard" after a jump: hold the weight',
+            history: _climb,
+            feedback: [fb(14, CoachRating.tooHard)],
+            prior: 0,
+            action: CoachAction.repeat,
+            weight: 90,
+            secondSet: null,
+            reason: CoachReasonCode.lastRating,
+            direction: -1,
+          ),
+          (
+            name: 'last session "too easy" while climbing reps: add weight now',
+            history: oneShort,
+            feedback: [
+              fb(14, CoachRating.tooEasy, action: CoachAction.addReps),
+            ],
+            prior: 0,
+            action: CoachAction.addWeight,
+            weight: 92.5,
+            secondSet: null,
+            reason: CoachReasonCode.lastRating,
+            direction: 1,
+          ),
+          (
+            name: 'mostly "too hard": the 2nd set must reach the top too',
+            history: _climb,
+            feedback: tooHardBefore,
+            prior: 0,
+            action: CoachAction.repeat,
+            weight: 90,
+            secondSet: 8,
+            reason: CoachReasonCode.feedbackAdjusted,
+            direction: -1,
+          ),
+          (
+            name: 'mostly "too hard": one miss steps back',
+            history: missed,
+            feedback: tooHardBefore,
+            prior: 0,
+            action: CoachAction.stepBack,
+            weight: 87.5,
+            secondSet: null,
+            reason: CoachReasonCode.feedbackAdjusted,
+            direction: -1,
+          ),
+          (
+            name: 'without feedback one miss only holds',
+            history: missed,
+            feedback: const [],
+            prior: 0,
+            action: CoachAction.repeat,
+            weight: 90,
+            secondSet: null,
+            reason: null,
+            direction: null,
+          ),
+          (
+            name: 'mostly "too easy": one rep short of the top adds weight',
+            history: oneShort,
+            feedback: tooEasyBefore,
+            prior: 0,
+            action: CoachAction.addWeight,
+            weight: 92.5,
+            secondSet: null,
+            reason: CoachReasonCode.feedbackAdjusted,
+            direction: 1,
+          ),
+          (
+            name: 'a single older "too hard" is not enough to change the rules',
+            history: _climb,
+            feedback: [fb(7, CoachRating.tooHard, weight: 87.5)],
+            prior: 0,
+            action: CoachAction.addWeight,
+            weight: 92.5,
+            secondSet: null,
+            reason: null,
+            direction: null,
+          ),
+          (
+            name: 'no ratings yet: the prior from other exercises applies',
+            history: _climb,
+            feedback: const [],
+            prior: -1.5,
+            action: CoachAction.repeat,
+            weight: 90,
+            secondSet: 8,
+            reason: CoachReasonCode.feedbackAdjusted,
+            direction: -1,
+          ),
+          (
+            name: 'deload ratings are ignored',
+            history: _climb,
+            feedback: [
+              for (final d in [0, 7, 14])
+                fb(d, CoachRating.tooHard, action: CoachAction.deload),
+            ],
+            prior: 0,
+            action: CoachAction.addWeight,
+            weight: 92.5,
+            secondSet: null,
+            reason: null,
+            direction: null,
+          ),
+        ];
+
+    for (final c in cases) {
+      test(c.name, () {
+        final r = engine.analyze(
+          c.history,
+          now: _day0.add(const Duration(days: 17)),
+          unit: 'kg',
+          feedback: c.feedback,
+          prior: c.prior,
+        );
+        final s = r.suggestion!;
+        expect(s.action, c.action);
+        expect(s.weight, c.weight);
+        expect(s.secondSetReps, c.secondSet);
+        final codes = s.reasons.map((x) => x.code);
+        if (c.reason == null) {
+          expect(codes, isNot(contains(CoachReasonCode.feedbackAdjusted)));
+          expect(codes, isNot(contains(CoachReasonCode.lastRating)));
+        } else {
+          final reason = s.reasons.firstWhere((x) => x.code == c.reason);
+          expect(reason.direction, c.direction);
+        }
+      });
+    }
+
+    test('calibration: recent ratings weigh more, counts are reported', () {
+      final r = engine.analyze(
+        _climb,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: tooHardBefore,
+      );
+      // Weights 1, 0.75, 0.5625 (newest first) on signals 0, -1, -1.
+      expect(r.calibration, closeTo(2 * -1.3125 / 2.3125, 1e-9));
+      expect(r.feedbackCount, 3);
+      final reason = r.suggestion!.reasons.firstWhere(
+        (x) => x.code == CoachReasonCode.feedbackAdjusted,
+      );
+      expect(reason.sessions, 3);
+      expect(reason.reps, 2);
+    });
+
+    test('a rating the log contradicts is softened', () {
+      // "Too hard", yet the top set beat the 6-7 target at that weight.
+      final r = engine.analyze(
+        _climb,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: [fb(14, CoachRating.tooHard, hi: 7)],
+      );
+      expect(r.calibration, closeTo(2 * -0.5 / 3, 1e-9));
+    });
+
+    test('"about right" with the bottom of the range missed leans easier', () {
+      final r = engine.analyze(
+        missed,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: [fb(14, CoachRating.right)],
+      );
+      expect(r.calibration, closeTo(2 * -0.5 / 3, 1e-9));
+    });
+
+    test('only the last six ratings count', () {
+      final r = engine.analyze(
+        _climb,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: [
+          for (var d = 0; d < 9; d++)
+            fb(-d * 7, CoachRating.tooEasy, weight: 70),
+        ],
+      );
+      expect(r.feedbackCount, 6);
+    });
+
+    test('the calibration is clamped to [-2, 2]', () {
+      final easy = engine.analyze(
+        _climb,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: [
+          // Too easy, and the top set beat a 6-7 target every time.
+          fb(0, CoachRating.tooEasy, weight: 85, hi: 7),
+          fb(7, CoachRating.tooEasy, weight: 87.5, hi: 7),
+          fb(14, CoachRating.tooEasy, hi: 7),
+        ],
+      );
+      expect(easy.calibration, 2);
+      final prior = engine.analyze(
+        _climb,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        prior: -5,
+      );
+      expect(prior.calibration, -2);
+    });
+  });
 }

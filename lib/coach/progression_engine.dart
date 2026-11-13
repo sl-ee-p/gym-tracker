@@ -35,6 +35,11 @@ class CoachConfig {
     this.trendLength = 12,
     this.averageWindow = 3,
     this.changeLookbackDays = 28,
+    this.feedbackWindow = 6,
+    this.feedbackDecay = 0.75,
+    this.feedbackFullCount = 3,
+    this.feedbackThreshold = 1,
+    this.loggedSignalWeight = 0.5,
   });
 
   /// Sessions needed before trend, stall and the learned rep range apply.
@@ -86,6 +91,37 @@ class CoachConfig {
   final int trendLength;
   final int averageWindow;
   final int changeLookbackDays;
+
+  /// Ratings counted for the calibration: the most recent this many.
+  final int feedbackWindow;
+
+  /// Each older rating counts this much less than the one after it.
+  final double feedbackDecay;
+
+  /// Fewer ratings than this count proportionally less, so one tap can't
+  /// swing the rules on its own (the last rating still acts directly).
+  final int feedbackFullCount;
+
+  /// The calibration has to reach this (either way) to change the rules.
+  final double feedbackThreshold;
+
+  /// How much what was actually logged at the rated weight (top set above
+  /// or below the target) adds to a rating.
+  final double loggedSignalWeight;
+}
+
+/// The result of [ProgressionEngine]'s feedback calibration.
+class _Calibration {
+  const _Calibration(this.value, this.counted, this.agreeing);
+
+  static const none = _Calibration(0, 0, 0);
+
+  /// -2 (ease off) to 2 (push harder).
+  final double value;
+  final int counted;
+
+  /// Ratings in [counted] that point the same way as [value].
+  final int agreeing;
 }
 
 /// One exposure reduced to what the rules need.
@@ -126,11 +162,17 @@ class ProgressionEngine {
 
   final CoachConfig config;
 
+  /// [feedback] holds this exercise's ratings in any order. [prior] is the
+  /// calibration to lean on while it has few: the service passes half the
+  /// lifter's average over all exercises. Without either, the result is
+  /// exactly the stateless rules.
   CoachReport analyze(
     List<CoachExposure> history, {
     required DateTime now,
     required String unit,
     CoachEquipment equipment = const CoachEquipment.stack(),
+    List<CoachFeedback> feedback = const [],
+    double prior = 0,
   }) {
     final c = config;
     double toUnit(double kg) =>
@@ -219,6 +261,20 @@ class ProgressionEngine {
     }
 
     final deloadLength = _replay(sessions, range);
+    final calibration = _calibrate(feedback, sessions, prior);
+    final easeOff = calibration.value <= -c.feedbackThreshold;
+    final push = calibration.value >= c.feedbackThreshold;
+    final secondSetSlack = easeOff
+        ? 0
+        : push
+        ? c.secondSetSlack + 1
+        : c.secondSetSlack;
+    final doubleStepExtraReps = easeOff
+        ? 1 <<
+              20 // never two steps at once
+        : push
+        ? c.doubleStepExtraReps - 1
+        : c.doubleStepExtraReps;
 
     // ----- Trend -----
     final valued = sessions.where((s) => s.value != null).toList();
@@ -360,8 +416,20 @@ class ProgressionEngine {
         );
       }
       final r2 = base.second?.reps;
+      if (easeOff || push) {
+        reasons.add(
+          CoachReason(
+            CoachReasonCode.feedbackAdjusted,
+            sessions: calibration.counted,
+            reps: calibration.agreeing,
+            direction: push ? 1 : -1,
+          ),
+        );
+      }
+      // Pushing: one rep short of the top is close enough to add weight.
+      final topReached = push ? r >= hi - 1 : r >= hi;
 
-      if (r >= hi && (r2 == null || r2 >= hi - c.secondSetSlack)) {
+      if (topReached && (r2 == null || r2 >= hi - secondSetSlack)) {
         reasons.add(
           CoachReason(
             CoachReasonCode.hitTopOfRange,
@@ -370,7 +438,7 @@ class ProgressionEngine {
             target: hi,
           ),
         );
-        final steps = r >= hi + c.doubleStepExtraReps ? 2 : 1;
+        final steps = r >= hi + doubleStepExtraReps ? 2 : 1;
         suggestion = make(
           CoachAction.addWeight,
           grid.up(w, steps: steps),
@@ -382,7 +450,7 @@ class ProgressionEngine {
           CoachReason(
             CoachReasonCode.secondSetShort,
             reps: r2,
-            target: hi - c.secondSetSlack,
+            target: hi - secondSetSlack,
           ),
         );
         suggestion = make(CoachAction.repeat, w, hi, hi, second: r2! + 1);
@@ -397,10 +465,12 @@ class ProgressionEngine {
           baseIndex < 0 ? sessions.length - 1 : baseIndex,
         );
         final prev = prevIndex < 0 ? null : sessions[prevIndex];
+        // Easing off: one miss is enough to step back.
         final missedBefore =
-            prev != null &&
-            (toUnit(prev.top.weightKg) - w).abs() < 0.01 &&
-            prev.top.reps < lo;
+            easeOff ||
+            (prev != null &&
+                (toUnit(prev.top.weightKg) - w).abs() < 0.01 &&
+                prev.top.reps < lo);
         if (missedBefore) {
           reasons.add(CoachReason(CoachReasonCode.missedTwice, target: lo));
           suggestion = make(
@@ -415,6 +485,25 @@ class ProgressionEngine {
           );
           suggestion = make(CoachAction.repeat, w, lo, range.hi);
         }
+      }
+
+      // The rating of the session this builds on acts directly: "too easy"
+      // after a hold means the weight goes up now, "too hard" after a jump
+      // means it stays where it is.
+      final rated = _ratingOf(feedback, base);
+      if (rated == CoachRating.tooEasy &&
+          (suggestion.action == CoachAction.repeat ||
+              suggestion.action == CoachAction.addReps)) {
+        reasons.add(
+          const CoachReason(CoachReasonCode.lastRating, direction: 1),
+        );
+        suggestion = make(CoachAction.addWeight, grid.up(w), lo, range.hi);
+      } else if (rated == CoachRating.tooHard &&
+          suggestion.action == CoachAction.addWeight) {
+        reasons.add(
+          const CoachReason(CoachReasonCode.lastRating, direction: -1),
+        );
+        suggestion = make(CoachAction.repeat, w, lo, range.hi);
       }
 
       // Hitting the top of the range means the weight should go up, not
@@ -493,7 +582,70 @@ class ProgressionEngine {
       changePercent: change,
       lastTopSet: last.top,
       stalledSessions: last.light ? 0 : last.stallCount,
+      calibration: calibration.value,
+      feedbackCount: calibration.counted,
     );
+  }
+
+  /// The rating given to [session]'s workout, if any. Deloads are never
+  /// rated: an easy deload is the point of it.
+  CoachRating? _ratingOf(List<CoachFeedback> feedback, _Session session) {
+    for (final f in feedback.reversed) {
+      if (f.action != CoachAction.deload && _days(f.date, session.date) == 0) {
+        return f.rating;
+      }
+    }
+    return null;
+  }
+
+  /// Turns the recent ratings into one number from -2 to 2. Each rating is
+  /// -1/0/1, plus [CoachConfig.loggedSignalWeight] when the top set at the
+  /// rated weight landed above or below the target: "too hard" with every
+  /// rep made counts for less, "about right" with reps missed leans easier.
+  _Calibration _calibrate(
+    List<CoachFeedback> feedback,
+    List<_Session> sessions,
+    double prior,
+  ) {
+    final c = config;
+    final rated = feedback.where((f) => f.action != CoachAction.deload).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final recent = rated.take(c.feedbackWindow).toList();
+    if (recent.isEmpty) {
+      return prior == 0
+          ? _Calibration.none
+          : _Calibration(prior.clamp(-2.0, 2.0), 0, 0);
+    }
+    var sum = 0.0;
+    var weights = 0.0;
+    var weight = 1.0;
+    final signals = <double>[];
+    for (final f in recent) {
+      var signal = f.rating.value.toDouble();
+      for (final s in sessions) {
+        if (_days(f.date, s.date) != 0) continue;
+        final atWeight =
+            (s.top.weightKg - f.weightKg).abs() <=
+            math.max(0.3, f.weightKg * 0.01);
+        if (atWeight && s.top.reps > f.repsMax) {
+          signal += c.loggedSignalWeight;
+        } else if (atWeight && s.top.reps < f.repsMin) {
+          signal -= c.loggedSignalWeight;
+        }
+        break;
+      }
+      signals.add(signal);
+      sum += weight * signal;
+      weights += weight;
+      weight *= c.feedbackDecay;
+    }
+    final confidence = math.min(1.0, recent.length / c.feedbackFullCount);
+    final value = (2 * (sum / weights) * confidence + prior * (1 - confidence))
+        .clamp(-2.0, 2.0);
+    final agreeing = value == 0
+        ? 0
+        : signals.where((s) => s != 0 && s.sign == value.sign).length;
+    return _Calibration(value, recent.length, agreeing);
   }
 
   /// Drops non-working sets and fatigue fragments (sets under half the

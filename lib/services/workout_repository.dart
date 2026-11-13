@@ -1,3 +1,4 @@
+import '../coach/coach_models.dart';
 import '../models/workout_session.dart';
 import '../models/exercise_set.dart';
 import '../models/exercise.dart';
@@ -154,6 +155,89 @@ class WorkoutRepository {
         'groupOrder': groupOrder,
       });
     });
+  }
+
+  /// Saves how the coach's suggestion felt for [exerciseId] in
+  /// [workoutSessionId], replacing an earlier answer for the same pair.
+  Future<void> upsertCoachFeedback({
+    required int workoutSessionId,
+    required int exerciseId,
+    required CoachFeedback feedback,
+  }) async {
+    await _dbHelper.transaction<void>((txn) async {
+      await txn.delete(
+        'coach_feedback',
+        where: 'workoutSessionId = ? AND exerciseId = ?',
+        whereArgs: [workoutSessionId, exerciseId],
+      );
+      await txn.insert('coach_feedback', {
+        'workoutSessionId': workoutSessionId,
+        'exerciseId': exerciseId,
+        'date': feedback.date.toIso8601String(),
+        'action': feedback.action.name,
+        'weightKg': feedback.weightKg,
+        'repsMin': feedback.repsMin,
+        'repsMax': feedback.repsMax,
+        'rating': feedback.rating.value,
+      });
+    });
+  }
+
+  /// The rating saved for [exerciseId] in [workoutSessionId], if any.
+  Future<CoachRating?> getCoachRating(
+      int workoutSessionId, int exerciseId) async {
+    final rows = await _dbHelper.query(
+      'coach_feedback',
+      where: 'workoutSessionId = ? AND exerciseId = ?',
+      whereArgs: [workoutSessionId, exerciseId],
+    );
+    if (rows.isEmpty) return null;
+    return CoachRating.fromValue((rows.first['rating'] as num).toInt());
+  }
+
+  /// [exerciseId]'s ratings from completed workouts, dated like the
+  /// workout so the coach can match them to what was lifted.
+  Future<List<CoachFeedback>> getCoachFeedback(int exerciseId) async {
+    final rows = await _dbHelper.rawQuery('''
+      SELECT ws.date AS workoutDate, cf.action, cf.weightKg, cf.repsMin,
+             cf.repsMax, cf.rating
+      FROM coach_feedback cf
+      INNER JOIN workout_sessions ws ON cf.workoutSessionId = ws.id
+      WHERE cf.exerciseId = ? AND ws.isCompleted = 1
+      ORDER BY ws.date ASC
+    ''', [exerciseId]);
+    return [
+      for (final row in rows)
+        CoachFeedback(
+          date: DateTime.parse(row['workoutDate'] as String),
+          action: CoachAction.values.firstWhere(
+            (a) => a.name == row['action'],
+            orElse: () => CoachAction.repeat,
+          ),
+          weightKg: (row['weightKg'] as num).toDouble(),
+          repsMin: (row['repsMin'] as num).toInt(),
+          repsMax: (row['repsMax'] as num).toInt(),
+          rating: CoachRating.fromValue((row['rating'] as num).toInt()),
+        ),
+    ];
+  }
+
+  /// The most recent ratings (-1/0/1) for every exercise but
+  /// [excludeExerciseId], deloads left out: the coach's prior for an
+  /// exercise with few ratings of its own.
+  Future<List<int>> getRecentCoachRatings({
+    required int excludeExerciseId,
+    int limit = 20,
+  }) async {
+    final rows = await _dbHelper.rawQuery('''
+      SELECT cf.rating
+      FROM coach_feedback cf
+      INNER JOIN workout_sessions ws ON cf.workoutSessionId = ws.id
+      WHERE cf.exerciseId != ? AND ws.isCompleted = 1 AND cf.action != 'deload'
+      ORDER BY ws.date DESC
+      LIMIT ?
+    ''', [excludeExerciseId, limit]);
+    return [for (final row in rows) (row['rating'] as num).toInt()];
   }
 
   /// Removes [exerciseId]'s group membership for [workoutSessionId], if any.

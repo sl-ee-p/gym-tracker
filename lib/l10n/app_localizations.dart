@@ -429,6 +429,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggests weights and reps from your history'**
   String get coachSettingSubtitle;
+
+  /// Reason: the lifter's ratings made the coach more careful.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated {agreeing} of your last {sessions} suggestions too hard, so weight now goes up only after both sets reach the top of the range.'**
+  String coachReasonFeedbackEasier(int agreeing, int sessions);
+
+  /// Reason: the lifter's ratings made the coach push harder.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated {agreeing} of your last {sessions} suggestions too easy, so weight now goes up one rep short of the top of the range.'**
+  String coachReasonFeedbackHarder(int agreeing, int sessions);
+
+  /// Reason: no ratings for this exercise yet; the ratings of other exercises made the coach more careful.
+  ///
+  /// In en, this message translates to:
+  /// **'You often rate other exercises too hard, so this one adds weight carefully too.'**
+  String get coachReasonPriorEasier;
+
+  /// Reason: no ratings for this exercise yet; the ratings of other exercises made the coach push harder.
+  ///
+  /// In en, this message translates to:
+  /// **'You often rate other exercises too easy, so this one adds weight sooner too.'**
+  String get coachReasonPriorHarder;
+
+  /// Reason: the last session was rated too hard.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated last session too hard, so the weight stays the same.'**
+  String get coachReasonLastTooHard;
+
+  /// Reason: the last session was rated too easy.
+  ///
+  /// In en, this message translates to:
+  /// **'You rated last session too easy, so the weight goes up now.'**
+  String get coachReasonLastTooEasy;
 }
 
 class _AppLocalizationsDelegate

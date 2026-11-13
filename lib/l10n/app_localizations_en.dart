@@ -258,4 +258,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get coachSettingSubtitle =>
       'Suggests weights and reps from your history';
+
+  @override
+  String coachReasonFeedbackEasier(int agreeing, int sessions) {
+    return 'You rated $agreeing of your last $sessions suggestions too hard, so weight now goes up only after both sets reach the top of the range.';
+  }
+
+  @override
+  String coachReasonFeedbackHarder(int agreeing, int sessions) {
+    return 'You rated $agreeing of your last $sessions suggestions too easy, so weight now goes up one rep short of the top of the range.';
+  }
+
+  @override
+  String get coachReasonPriorEasier =>
+      'You often rate other exercises too hard, so this one adds weight carefully too.';
+
+  @override
+  String get coachReasonPriorHarder =>
+      'You often rate other exercises too easy, so this one adds weight sooner too.';
+
+  @override
+  String get coachReasonLastTooHard =>
+      'You rated last session too hard, so the weight stays the same.';
+
+  @override
+  String get coachReasonLastTooEasy =>
+      'You rated last session too easy, so the weight goes up now.';
 }

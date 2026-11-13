@@ -418,5 +418,45 @@
   "coachSettingSubtitle": "Suggests weights and reps from your history",
   "@coachSettingSubtitle": {
     "description": "Subtitle of the coach switch in Settings."
+  },
+  "coachReasonFeedbackEasier": "You rated {agreeing} of your last {sessions} suggestions too hard, so weight now goes up only after both sets reach the top of the range.",
+  "@coachReasonFeedbackEasier": {
+    "description": "Reason: the lifter's ratings made the coach more careful.",
+    "placeholders": {
+      "agreeing": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonFeedbackHarder": "You rated {agreeing} of your last {sessions} suggestions too easy, so weight now goes up one rep short of the top of the range.",
+  "@coachReasonFeedbackHarder": {
+    "description": "Reason: the lifter's ratings made the coach push harder.",
+    "placeholders": {
+      "agreeing": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      }
+    }
+  },
+  "coachReasonPriorEasier": "You often rate other exercises too hard, so this one adds weight carefully too.",
+  "@coachReasonPriorEasier": {
+    "description": "Reason: no ratings for this exercise yet; the ratings of other exercises made the coach more careful."
+  },
+  "coachReasonPriorHarder": "You often rate other exercises too easy, so this one adds weight sooner too.",
+  "@coachReasonPriorHarder": {
+    "description": "Reason: no ratings for this exercise yet; the ratings of other exercises made the coach push harder."
+  },
+  "coachReasonLastTooHard": "You rated last session too hard, so the weight stays the same.",
+  "@coachReasonLastTooHard": {
+    "description": "Reason: the last session was rated too hard."
+  },
+  "coachReasonLastTooEasy": "You rated last session too easy, so the weight goes up now.",
+  "@coachReasonLastTooEasy": {
+    "description": "Reason: the last session was rated too easy."
   }
 }
