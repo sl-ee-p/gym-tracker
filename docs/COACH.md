@@ -2,7 +2,7 @@
 
 The coach reads an exercise's logged history and does four things. It estimates the 1RM trend and suggests the next session's weight and reps. It also flags stalls and recommends a deload. All of it is pure maths on existing data. The only state is the lifter's optional ratings (§ 8b, schema v10).
 
-Status: built on `feature/coach` (C0–C5) and extended on `feature/coach-feedback` (F1–F5: Settings switch, ratings, explanations; 1.2.0+17), neither merged. Free for now; see Free vs Pro for the gating follow-up.
+Status: built on `feature/coach` (C0–C5) and extended on `feature/coach-feedback` (F1–F5: Settings switch, ratings, explanations; 1.2.0+17), merged into `main` on 2026-11-13 (1.2.1+18). Free for now; see Free vs Pro for the gating follow-up.
 
 ## Progression rules (v1, tunable by the backtest)
 All maths works on **completed** workouts only. A **working set** is non-warm-up, weight > 0, reps ≥ 1; partial reps are ignored. Sessions with an exercise = "exposures". Weights are computed in kg and rounded in the **display unit**.

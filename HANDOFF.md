@@ -2,7 +2,7 @@
 
 Plan: on/off switch, ratings that teach the coach, clearer explanations. Rules in `docs/COACH.md` § 8b.
 
-## Done (1.2.0+17, pushed, not merged)
+## Done (merged into `main` 2026-11-13, 1.2.1+18)
 - **F1:** Settings → Workout → Coach switch (on by default). Schema v10: `user_profiles.coachEnabled` and `coach_feedback` (one rating per workout and exercise, in JSON backups, removed with its workout and by Clear All Data).
 - **F2:** `ProgressionEngine.analyze(feedback:, prior:)`:
   - turns the ratings into a calibration from −2 to +2;
@@ -36,7 +36,11 @@ Plan: on/off switch, ratings that teach the coach, clearer explanations. Rules i
 ## Seen, not changed
 - The "Set added successfully!" snackbar, which has a Start Rest Timer action, stays on screen until it is swiped or acted on, even across screens. This predates this branch.
 
+## After the merge (1.2.1+18)
+- The "Set added successfully!" SnackBar closes by itself (`persist: false`). While a rest is running or paused, it offers no Start Rest Timer or Quick Rest. Checked on a16.
+- CI is pinned to Flutter 3.47.9. Unpinned stable moved to 3.50.0 on 2026-11-12, which needs AGP ≥ 9.1.1 (we're on 9.1.0) and fails 4 widget tests on a late system-fonts frame. Upgrading Flutter is its own task: AGP bump plus those tests.
+
 ## Next
-- The owner tries it on a device. Merge `feature/coach` + `feature/coach-feedback` only when asked.
+- The owner tries it on a device. No AAB has been built for 1.2.x yet.
 - The Pro gating follow-up is unchanged (see `docs/COACH.md` § Free vs Pro).
 - Possible extra: a per-exercise "Reset what the coach learned" action.
