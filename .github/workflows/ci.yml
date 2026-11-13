@@ -25,6 +25,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pinned: an unpinned stable moved to 3.50 on 2026-11-12, which needs
+          # AGP >= 9.1.1 and fails 4 widget tests. Upgrade on purpose.
+          flutter-version: 3.47.9
           cache: true
 
       - run: flutter pub get
@@ -46,6 +49,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pinned: an unpinned stable moved to 3.50 on 2026-11-12, which needs
+          # AGP >= 9.1.1 and fails 4 widget tests. Upgrade on purpose.
+          flutter-version: 3.47.9
           cache: true
 
       - run: flutter pub get
