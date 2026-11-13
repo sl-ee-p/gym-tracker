@@ -91,7 +91,12 @@ After logging sets, the lifter can rate the suggestion: **Too easy / About right
 - **`b ≤ −1` (ease off):** weight goes up only when set 2 also reaches the top (slack 0), never two steps at once, and one miss below the range steps back.
 - **`b ≥ +1` (push):** one rep short of the top is enough to add weight, set 2 may be 2 short, and two steps come from `hi+2`.
 - **Last rating acts directly:** "too easy" on the session the suggestion builds on turns a hold or add-reps into add weight; "too hard" after an add-weight holds the weight.
-- **Explanations:** reason codes `feedbackAdjusted` (counts + direction) and `lastRating`.
+- **Explanations:** reason codes `feedbackAdjusted` (counts + direction), `lastRating`, and `missedEaseOff` (the one-miss step back; `missedTwice` stays for two real misses).
+- **UI:**
+  - **Workout row:** after the first working set, "How did 92.5 kg × 6–8 feel?" with three chips. The answer collapses to "Noted: … · Change". It is never asked on deloads or after "Not now".
+  - **Coach card:** a "Tuned to your ratings" line when a feedback reason applies. A "too hard" or "too easy" on the last session becomes the headline reason.
+  - **Why sheet:** a "What the coach learned" section with the feedback reasons and the rating count. With no ratings, it explains how to rate.
+- **Settings → Workout → Coach** turns the whole coach off (card, row, loading). Ratings are kept.
 - **No feedback = the stateless rules exactly.** The backtest reports for both windows are byte-identical before and after this change.
 
 ### 9. "Why" explanations

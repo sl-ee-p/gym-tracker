@@ -101,7 +101,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get coachTrendAverage => 'Line: average of the last 3 sessions';
+  String get coachTrendAverage =>
+      'The line is the average of your last 3 sessions.';
 
   @override
   String get coachEmptyTitle => 'No sessions yet';
@@ -182,17 +183,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String coachReasonClimbingReps(int reps, int target) {
-    return 'Last time: $reps reps. Add a rep before adding weight; the top of your range is $target.';
+    return 'Last time you did $reps reps. Add one more before adding weight; your range tops out at $target.';
   }
 
   @override
   String coachReasonBelowRange(int reps, int target) {
-    return 'Last time: $reps reps, under your range. Keep the weight and aim for $target.';
+    return 'Last time you did $reps reps, below your range. Keep the weight and aim for $target.';
   }
 
   @override
   String coachReasonMissedTwice(int target) {
-    return 'Two sessions under $target reps at this weight. Step back one notch and build up again.';
+    return 'Two sessions in a row under $target reps at this weight. Drop one step and build back up.';
   }
 
   @override
@@ -311,4 +312,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coachRateChange => 'Change';
+
+  @override
+  String get coachLearnedTitle => 'What the coach learned';
+
+  @override
+  String get coachLearnedNone =>
+      'After your sets, rate the suggestion (too easy, about right or too hard) and the coach tunes itself to you.';
+
+  @override
+  String coachLearnedCareful(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ratings of this exercise',
+      one: '1 rating of this exercise',
+    );
+    return '$_temp0 so far. Weight goes up more carefully for you.';
+  }
+
+  @override
+  String coachLearnedStandard(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ratings of this exercise',
+      one: '1 rating of this exercise',
+    );
+    return '$_temp0 so far. Not a clear lean either way yet, so the standard rules apply; your latest rating still counts.';
+  }
+
+  @override
+  String coachLearnedPush(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ratings of this exercise',
+      one: '1 rating of this exercise',
+    );
+    return '$_temp0 so far. Weight goes up sooner for you.';
+  }
+
+  @override
+  String get coachTunedToRatings => 'Tuned to your ratings';
+
+  @override
+  String coachReasonMissedEaseOff(int reps, int target) {
+    return 'Last time you did $reps reps, under your target of $target. Your ratings say ease off, so drop one step and build back up.';
+  }
 }

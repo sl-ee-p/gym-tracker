@@ -64,6 +64,10 @@ class CoachText {
       ),
       CoachReasonCode.belowRange => l10n.coachReasonBelowRange(reps, target),
       CoachReasonCode.missedTwice => l10n.coachReasonMissedTwice(target),
+      CoachReasonCode.missedEaseOff => l10n.coachReasonMissedEaseOff(
+        reps,
+        target,
+      ),
       CoachReasonCode.bigStepRepsFirst => l10n.coachReasonBigStepRepsFirst(
         weight(r.step ?? 0),
         target,
@@ -103,6 +107,26 @@ class CoachText {
         : l10n.coachReasonFeedbackEasier(agreeing, sessions);
   }
 
+  /// Reasons that come from the lifter's ratings rather than the log.
+  static bool isFeedback(CoachReason r) =>
+      r.code == CoachReasonCode.feedbackAdjusted ||
+      r.code == CoachReasonCode.lastRating;
+
+  /// The Why sheet's summary of the ratings: none yet, or how many and
+  /// which way they lean.
+  String learned(CoachReport report) {
+    final count = report.feedbackCount;
+    if (count == 0) return l10n.coachLearnedNone;
+    final adjusted = report.suggestion?.reasons
+        .where((r) => r.code == CoachReasonCode.feedbackAdjusted)
+        .firstOrNull;
+    return switch (adjusted?.direction) {
+      1 => l10n.coachLearnedPush(count),
+      -1 => l10n.coachLearnedCareful(count),
+      _ => l10n.coachLearnedStandard(count),
+    };
+  }
+
   /// The most specific reason, for the one-line summary under a suggestion.
   /// "Welcome back" wins because it changes the weight the most.
   String? headlineReason(CoachSuggestion s) {
@@ -110,6 +134,9 @@ class CoachText {
     final back = s.reasons
         .where((r) => r.code == CoachReasonCode.welcomeBack)
         .firstOrNull;
-    return reason(back ?? s.reasons.last);
+    final rated = s.reasons
+        .where((r) => r.code == CoachReasonCode.lastRating)
+        .firstOrNull;
+    return reason(back ?? rated ?? s.reasons.last);
   }
 }

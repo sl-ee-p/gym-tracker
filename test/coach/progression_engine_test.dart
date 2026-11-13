@@ -683,6 +683,18 @@ void main() {
       expect(reason.reps, 2);
     });
 
+    test('a step back after one miss says why, not "two sessions"', () {
+      final r = engine.analyze(
+        missed,
+        now: _day0.add(const Duration(days: 17)),
+        unit: 'kg',
+        feedback: tooHardBefore,
+      );
+      final codes = r.suggestion!.reasons.map((x) => x.code);
+      expect(codes, contains(CoachReasonCode.missedEaseOff));
+      expect(codes, isNot(contains(CoachReasonCode.missedTwice)));
+    });
+
     test('a rating the log contradicts is softened', () {
       // "Too hard", yet the top set beat the 6-7 target at that weight.
       final r = engine.analyze(

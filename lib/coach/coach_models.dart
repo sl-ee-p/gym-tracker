@@ -120,6 +120,10 @@ enum CoachReasonCode {
   /// days since the last session, percent = reduction applied.
   welcomeBack,
 
+  /// reps (top set) under target = bottom of the range, once: the ratings
+  /// lean "too hard", so the coach steps back without waiting for a 2nd miss.
+  missedEaseOff,
+
   /// The lifter's ratings changed the rules. sessions = recent ratings
   /// counted, reps = how many of them pointed in [CoachReason.direction]
   /// (1 = too easy, so the coach pushes; -1 = too hard, so it eases off).

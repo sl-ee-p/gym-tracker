@@ -235,7 +235,7 @@ abstract class AppLocalizations {
   /// Legend for the moving-average line.
   ///
   /// In en, this message translates to:
-  /// **'Line: average of the last 3 sessions'**
+  /// **'The line is the average of your last 3 sessions.'**
   String get coachTrendAverage;
 
   /// Empty state title.
@@ -337,19 +337,19 @@ abstract class AppLocalizations {
   /// Reason.
   ///
   /// In en, this message translates to:
-  /// **'Last time: {reps} reps. Add a rep before adding weight; the top of your range is {target}.'**
+  /// **'Last time you did {reps} reps. Add one more before adding weight; your range tops out at {target}.'**
   String coachReasonClimbingReps(int reps, int target);
 
   /// Reason.
   ///
   /// In en, this message translates to:
-  /// **'Last time: {reps} reps, under your range. Keep the weight and aim for {target}.'**
+  /// **'Last time you did {reps} reps, below your range. Keep the weight and aim for {target}.'**
   String coachReasonBelowRange(int reps, int target);
 
   /// Reason.
   ///
   /// In en, this message translates to:
-  /// **'Two sessions under {target} reps at this weight. Step back one notch and build up again.'**
+  /// **'Two sessions in a row under {target} reps at this weight. Drop one step and build back up.'**
   String coachReasonMissedTwice(int target);
 
   /// Reason.
@@ -507,6 +507,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change'**
   String get coachRateChange;
+
+  /// Why sheet: heading of the section about the lifter's ratings.
+  ///
+  /// In en, this message translates to:
+  /// **'What the coach learned'**
+  String get coachLearnedTitle;
+
+  /// Why sheet: no ratings yet.
+  ///
+  /// In en, this message translates to:
+  /// **'After your sets, rate the suggestion (too easy, about right or too hard) and the coach tunes itself to you.'**
+  String get coachLearnedNone;
+
+  /// Why sheet: ratings lean "too hard".
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up more carefully for you.'**
+  String coachLearnedCareful(int count);
+
+  /// Why sheet: ratings don't lean either way enough to change the rules.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Not a clear lean either way yet, so the standard rules apply; your latest rating still counts.'**
+  String coachLearnedStandard(int count);
+
+  /// Why sheet: ratings lean "too easy".
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up sooner for you.'**
+  String coachLearnedPush(int count);
+
+  /// Coach card: the suggestion was changed by the lifter's ratings.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuned to your ratings'**
+  String get coachTunedToRatings;
+
+  /// Reason: one session below the range, and the lifter's ratings lean "too hard", so the coach steps back right away.
+  ///
+  /// In en, this message translates to:
+  /// **'Last time you did {reps} reps, under your target of {target}. Your ratings say ease off, so drop one step and build back up.'**
+  String coachReasonMissedEaseOff(int reps, int target);
 }
 
 class _AppLocalizationsDelegate

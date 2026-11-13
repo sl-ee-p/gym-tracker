@@ -41,9 +41,10 @@ class CoachWhySheet extends StatelessWidget {
     final text = CoachText(l10n, report.unit);
     final s = report.suggestion;
     final reasons = [
-      ...?s?.reasons,
+      ...?s?.reasons.where((r) => !CoachText.isFeedback(r)),
       if (report.deload != null) report.deload!.trigger,
     ];
+    final feedbackReasons = [...?s?.reasons.where(CoachText.isFeedback)];
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -70,30 +71,19 @@ class CoachWhySheet extends StatelessWidget {
                 ),
             ],
             const SizedBox(height: AppSpacing.lg),
-            for (final r in reasons)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Icon(
-                        _iconFor(r.code),
-                        size: 18,
-                        color: scheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        text.reason(r),
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
+            for (final r in reasons) _ReasonLine(r, text: text),
+            if (s != null) ...[
+              Text(l10n.coachLearnedTitle, style: theme.textTheme.titleSmall),
+              const SizedBox(height: AppSpacing.sm),
+              for (final r in feedbackReasons) _ReasonLine(r, text: text),
+              Text(
+                text.learned(report),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             if (report.deload != null) ...[
               Text(
                 text.deload(report.deload!),
@@ -154,7 +144,8 @@ class CoachWhySheet extends StatelessWidget {
     CoachReasonCode.secondSetShort ||
     CoachReasonCode.bigStepRepsFirst => Icons.add_circle_outline,
     CoachReasonCode.belowRange ||
-    CoachReasonCode.missedTwice => Icons.south_east,
+    CoachReasonCode.missedTwice ||
+    CoachReasonCode.missedEaseOff => Icons.south_east,
     CoachReasonCode.stalled ||
     CoachReasonCode.regressed => Icons.pause_circle_outline,
     CoachReasonCode.deloadContinue ||
@@ -165,6 +156,38 @@ class CoachWhySheet extends StatelessWidget {
     CoachReasonCode.feedbackAdjusted ||
     CoachReasonCode.lastRating => Icons.tune,
   };
+}
+
+class _ReasonLine extends StatelessWidget {
+  const _ReasonLine(this.reason, {required this.text});
+
+  final CoachReason reason;
+  final CoachText text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              CoachWhySheet._iconFor(reason.code),
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(text.reason(reason), style: theme.textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _FactLine extends StatelessWidget {

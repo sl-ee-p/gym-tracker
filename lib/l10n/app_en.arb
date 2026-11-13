@@ -159,7 +159,7 @@
       }
     }
   },
-  "coachTrendAverage": "Line: average of the last 3 sessions",
+  "coachTrendAverage": "The line is the average of your last 3 sessions.",
   "@coachTrendAverage": {
     "description": "Legend for the moving-average line."
   },
@@ -277,7 +277,7 @@
       }
     }
   },
-  "coachReasonClimbingReps": "Last time: {reps} reps. Add a rep before adding weight; the top of your range is {target}.",
+  "coachReasonClimbingReps": "Last time you did {reps} reps. Add one more before adding weight; your range tops out at {target}.",
   "@coachReasonClimbingReps": {
     "description": "Reason.",
     "placeholders": {
@@ -289,7 +289,7 @@
       }
     }
   },
-  "coachReasonBelowRange": "Last time: {reps} reps, under your range. Keep the weight and aim for {target}.",
+  "coachReasonBelowRange": "Last time you did {reps} reps, below your range. Keep the weight and aim for {target}.",
   "@coachReasonBelowRange": {
     "description": "Reason.",
     "placeholders": {
@@ -301,7 +301,7 @@
       }
     }
   },
-  "coachReasonMissedTwice": "Two sessions under {target} reps at this weight. Step back one notch and build up again.",
+  "coachReasonMissedTwice": "Two sessions in a row under {target} reps at this weight. Drop one step and build back up.",
   "@coachReasonMissedTwice": {
     "description": "Reason.",
     "placeholders": {
@@ -504,5 +504,56 @@
   "coachRateChange": "Change",
   "@coachRateChange": {
     "description": "Button that reopens the rating chips."
+  },
+  "coachLearnedTitle": "What the coach learned",
+  "@coachLearnedTitle": {
+    "description": "Why sheet: heading of the section about the lifter's ratings."
+  },
+  "coachLearnedNone": "After your sets, rate the suggestion (too easy, about right or too hard) and the coach tunes itself to you.",
+  "@coachLearnedNone": {
+    "description": "Why sheet: no ratings yet."
+  },
+  "coachLearnedCareful": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up more carefully for you.",
+  "@coachLearnedCareful": {
+    "description": "Why sheet: ratings lean \"too hard\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachLearnedStandard": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Not a clear lean either way yet, so the standard rules apply; your latest rating still counts.",
+  "@coachLearnedStandard": {
+    "description": "Why sheet: ratings don't lean either way enough to change the rules.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachLearnedPush": "{count, plural, =1{1 rating of this exercise} other{{count} ratings of this exercise}} so far. Weight goes up sooner for you.",
+  "@coachLearnedPush": {
+    "description": "Why sheet: ratings lean \"too easy\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "coachTunedToRatings": "Tuned to your ratings",
+  "@coachTunedToRatings": {
+    "description": "Coach card: the suggestion was changed by the lifter's ratings."
+  },
+  "coachReasonMissedEaseOff": "Last time you did {reps} reps, under your target of {target}. Your ratings say ease off, so drop one step and build back up.",
+  "@coachReasonMissedEaseOff": {
+    "description": "Reason: one session below the range, and the lifter's ratings lean \"too hard\", so the coach steps back right away.",
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
   }
 }

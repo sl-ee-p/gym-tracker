@@ -472,6 +472,23 @@ class _NextSession extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             Text(reason, style: theme.textTheme.bodySmall),
           ],
+          if (suggestion.reasons.any(CoachText.isFeedback)) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                Icon(Icons.tune, size: 14, color: scheme.primary),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    l10n.coachTunedToRatings,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

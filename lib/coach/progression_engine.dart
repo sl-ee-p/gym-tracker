@@ -465,14 +465,21 @@ class ProgressionEngine {
           baseIndex < 0 ? sessions.length - 1 : baseIndex,
         );
         final prev = prevIndex < 0 ? null : sessions[prevIndex];
-        // Easing off: one miss is enough to step back.
         final missedBefore =
-            easeOff ||
-            (prev != null &&
-                (toUnit(prev.top.weightKg) - w).abs() < 0.01 &&
-                prev.top.reps < lo);
-        if (missedBefore) {
-          reasons.add(CoachReason(CoachReasonCode.missedTwice, target: lo));
+            prev != null &&
+            (toUnit(prev.top.weightKg) - w).abs() < 0.01 &&
+            prev.top.reps < lo;
+        // Easing off: one miss is enough to step back.
+        if (missedBefore || easeOff) {
+          reasons.add(
+            missedBefore
+                ? CoachReason(CoachReasonCode.missedTwice, target: lo)
+                : CoachReason(
+                    CoachReasonCode.missedEaseOff,
+                    reps: r,
+                    target: lo,
+                  ),
+          );
           suggestion = make(
             CoachAction.stepBack,
             grid.down(w, w - grid.step),

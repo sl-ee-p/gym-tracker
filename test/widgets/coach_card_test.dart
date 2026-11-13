@@ -46,6 +46,7 @@ CoachReport _report(
   DeloadAdvice? deload,
   int exposures = 6,
   bool learned = true,
+  int feedbackCount = 0,
 }) => CoachReport(
   status: status,
   range: RepRange(6, 8, learned: learned),
@@ -58,6 +59,7 @@ CoachReport _report(
   changePercent: 0.031,
   lastTopSet: const CoachSet(weightKg: 90, reps: 8),
   stalledSessions: 5,
+  feedbackCount: feedbackCount,
 );
 
 const _addWeight = CoachSuggestion(
@@ -183,6 +185,84 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Why this suggestion'), findsOneWidget);
     expect(find.textContaining('Weight step 2.5 kg'), findsOneWidget);
+    // No ratings yet: the sheet says how to give some.
+    expect(find.text('What the coach learned'), findsOneWidget);
+    expect(find.textContaining('rate the suggestion'), findsOneWidget);
+    expect(find.text('Tuned to your ratings'), findsNothing);
+  });
+
+  testWidgets('tuned by ratings: the card says so and the sheet explains', (
+    tester,
+  ) async {
+    const tuned = CoachSuggestion(
+      action: CoachAction.repeat,
+      weight: 90,
+      weightKg: 90,
+      repsMin: 6,
+      repsMax: 8,
+      secondSetReps: 8,
+      reasons: [
+        CoachReason(
+          CoachReasonCode.feedbackAdjusted,
+          sessions: 4,
+          reps: 3,
+          direction: -1,
+        ),
+        CoachReason(CoachReasonCode.secondSetShort, reps: 7, target: 8),
+      ],
+    );
+    await _pump(
+      tester,
+      Future.value(
+        _report(CoachStatus.holding, suggestion: tuned, feedbackCount: 4),
+      ),
+    );
+    expect(find.text('Tuned to your ratings'), findsOneWidget);
+    // The headline stays the rule that decided the suggestion.
+    expect(find.textContaining('set 2 needs 8 reps'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Why?'));
+    await tester.tap(find.text('Why?'));
+    await tester.pumpAndSettle();
+    expect(find.text('What the coach learned'), findsOneWidget);
+    expect(
+      find.textContaining('You rated 3 of your last 4 suggestions too hard'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        '4 ratings of this exercise so far. Weight goes up '
+        'more carefully',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a "too hard" last session is the headline', (tester) async {
+    const held = CoachSuggestion(
+      action: CoachAction.repeat,
+      weight: 90,
+      weightKg: 90,
+      repsMin: 6,
+      repsMax: 8,
+      reasons: [
+        CoachReason(CoachReasonCode.hitTopOfRange, weight: 90, reps: 8),
+        CoachReason(CoachReasonCode.lastRating, direction: -1),
+      ],
+    );
+    await _pump(
+      tester,
+      Future.value(
+        _report(CoachStatus.holding, suggestion: held, feedbackCount: 1),
+      ),
+    );
+    expect(
+      find.text(
+        'You rated last session too hard, so the weight stays the same.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Tuned to your ratings'), findsOneWidget);
   });
 
   testWidgets('stalled: deload banner with the advice', (tester) async {
