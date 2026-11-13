@@ -71,10 +71,16 @@ const _addWeight = CoachSuggestion(
   ],
 );
 
-Future<void> _pump(WidgetTester tester, Future<CoachReport> result) async {
+Future<void> _pump(
+  WidgetTester tester,
+  Future<CoachReport> result, {
+  bool enabled = true,
+}) async {
   await tester.pumpWidget(
     ChangeNotifierProvider(
-      create: (_) => CoachProvider(service: _FakeService(result)),
+      create: (_) =>
+          CoachProvider(service: _FakeService(result))
+            ..update(unit: 'kg', defaultBarWeightKg: 20, enabled: enabled),
       child: MaterialApp(
         theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -90,6 +96,16 @@ Future<void> _pump(WidgetTester tester, Future<CoachReport> result) async {
 }
 
 void main() {
+  testWidgets('switched off in Settings: shows nothing', (tester) async {
+    await _pump(
+      tester,
+      Future.value(_report(CoachStatus.progressing, suggestion: _addWeight)),
+      enabled: false,
+    );
+    expect(find.text('Coach'), findsNothing);
+    expect(find.byType(Card), findsNothing);
+  });
+
   testWidgets('shows a skeleton while the first report loads', (tester) async {
     final pending = Completer<CoachReport>();
     await _pump(tester, pending.future);

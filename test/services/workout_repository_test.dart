@@ -135,6 +135,24 @@ void main() {
     });
   });
 
+  test('deleteWorkout also removes its coach_feedback rows', () async {
+    final workoutId = await insertWorkout(completed: true);
+    await db.insert('coach_feedback', {
+      'workoutSessionId': workoutId,
+      'exerciseId': 1,
+      'date': DateTime(2026, 11, 13).toIso8601String(),
+      'action': 'addWeight',
+      'weightKg': 92.5,
+      'repsMin': 6,
+      'repsMax': 8,
+      'rating': 0,
+    });
+
+    await repository.deleteWorkout(workoutId);
+
+    expect(await db.query('coach_feedback'), isEmpty);
+  });
+
   group('workout exercise groups', () {
     test('upsertWorkoutExerciseGroup then getWorkoutExerciseGroups round-trips',
         () async {

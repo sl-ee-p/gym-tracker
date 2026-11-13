@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/target_weight_dialog.dart';
+import '../l10n/app_localizations.dart';
 import '../models/reminder_schedule.dart';
 import '../providers/exercise_provider.dart';
 import '../providers/progress_provider.dart';
@@ -356,6 +357,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             subtitle: const Text('Rate each set 6–10'),
                             value: userProvider.rpeEnabled,
                             onChanged: userProvider.updateRpeEnabled,
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(Icons.trending_up),
+                            title: Text(
+                              AppLocalizations.of(context).coachSettingTitle,
+                            ),
+                            subtitle: Text(
+                              AppLocalizations.of(context).coachSettingSubtitle,
+                            ),
+                            value: userProvider.coachEnabled,
+                            onChanged: userProvider.updateCoachEnabled,
                           ),
                         ],
                       );

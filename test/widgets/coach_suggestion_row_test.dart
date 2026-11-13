@@ -59,6 +59,7 @@ Future<void> _pump(
   WidgetTester tester,
   CoachReport report, {
   int logged = 0,
+  bool enabled = true,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.5;
@@ -68,7 +69,9 @@ Future<void> _pump(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(
-          create: (_) => CoachProvider(service: _FakeService(report)),
+          create: (_) =>
+              CoachProvider(service: _FakeService(report))
+                ..update(unit: 'kg', defaultBarWeightKg: 20, enabled: enabled),
         ),
       ],
       child: MaterialApp(
@@ -102,6 +105,12 @@ String _field(WidgetTester tester, int index) => tester
     .text;
 
 void main() {
+  testWidgets('switched off in Settings: no row', (tester) async {
+    await _pump(tester, _report(), enabled: false);
+    expect(find.text('Use'), findsNothing);
+    expect(find.textContaining('Coach'), findsNothing);
+  });
+
   testWidgets('fields stay empty until Use is tapped', (tester) async {
     await _pump(tester, _report());
     expect(find.text('Coach · top set'), findsOneWidget);

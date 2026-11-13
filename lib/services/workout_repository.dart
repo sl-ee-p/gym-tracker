@@ -96,6 +96,11 @@ class WorkoutRepository {
         where: 'workoutSessionId = ?',
         whereArgs: [id],
       );
+      await txn.delete(
+        'coach_feedback',
+        where: 'workoutSessionId = ?',
+        whereArgs: [id],
+      );
       return txn.delete('workout_sessions', where: 'id = ?', whereArgs: [id]);
     });
 

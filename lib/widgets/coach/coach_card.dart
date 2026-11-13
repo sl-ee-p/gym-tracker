@@ -23,7 +23,9 @@ class CoachCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final report = context.watch<CoachProvider>().reportFor(exercise);
+    final coach = context.watch<CoachProvider>();
+    if (!coach.enabled) return const SizedBox.shrink();
+    final report = coach.reportFor(exercise);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),

@@ -251,4 +251,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String coachUseSemantics(String weight, int reps) {
     return 'Fill in $weight for $reps reps';
   }
+
+  @override
+  String get coachSettingTitle => 'Coach';
+
+  @override
+  String get coachSettingSubtitle =>
+      'Suggests weights and reps from your history';
 }

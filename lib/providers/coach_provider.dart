@@ -23,7 +23,12 @@ class CoachProvider extends ChangeNotifier {
   int _generation = 0;
   String _unit = 'kg';
   double _defaultBarWeightKg = 20;
+  bool _enabled = true;
   bool _disposed = false;
+
+  /// The Settings switch. When off, nothing is loaded and the card and the
+  /// workout row show nothing; stored feedback is kept for when it's back.
+  bool get enabled => _enabled;
 
   /// Workout id → exercise ids the user dismissed for that workout.
   final Map<int?, Set<int>> _dismissed = {};
@@ -35,13 +40,19 @@ class CoachProvider extends ChangeNotifier {
   final Map<int?, Set<int>> _deloadDeclined = {};
 
   /// Called by the proxy provider when workouts or profile settings change.
-  void update({required String unit, required double defaultBarWeightKg}) {
+  void update({
+    required String unit,
+    required double defaultBarWeightKg,
+    bool enabled = true,
+  }) {
     final settingsChanged =
         unit != _unit || defaultBarWeightKg != _defaultBarWeightKg;
     _unit = unit;
     _defaultBarWeightKg = defaultBarWeightKg;
+    _enabled = enabled;
     if (settingsChanged) _reports.clear();
     _generation++;
+    if (!enabled) return;
     // Reload what is on screen after the current build, never during it.
     final keys = _exercises.keys.toList();
     scheduleMicrotask(() {
@@ -55,6 +66,7 @@ class CoachProvider extends ChangeNotifier {
   /// The latest report for [exercise], possibly stale, or null while the
   /// first one loads. Starts a load when needed.
   CoachReport? reportFor(Exercise exercise) {
+    if (!_enabled) return null;
     final key = _key(exercise);
     _exercises[key] = exercise;
     if (_loadedGeneration[key] != _generation && !_loading.contains(key)) {

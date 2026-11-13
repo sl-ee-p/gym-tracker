@@ -417,6 +417,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fill in {weight} for {reps} reps'**
   String coachUseSemantics(String weight, int reps);
+
+  /// Settings switch that turns the progressive-overload coach on or off.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach'**
+  String get coachSettingTitle;
+
+  /// Subtitle of the coach switch in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggests weights and reps from your history'**
+  String get coachSettingSubtitle;
 }
 
 class _AppLocalizationsDelegate

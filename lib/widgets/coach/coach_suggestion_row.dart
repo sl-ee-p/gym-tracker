@@ -40,6 +40,7 @@ class CoachSuggestionRow extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final coach = context.watch<CoachProvider>();
+    if (!coach.enabled) return const SizedBox.shrink();
     final id = exercise.id!;
     final report = coach.reportFor(exercise);
     final s = report?.suggestion;

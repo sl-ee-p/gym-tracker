@@ -77,6 +77,23 @@ void main() {
     });
   });
 
+  group('v10 settings', () {
+    test('the coach defaults to on', () {
+      expect(profile().coachEnabled, isTrue);
+      expect(
+        UserProfile.fromMap(profile().toMap()..remove('coachEnabled'))
+            .coachEnabled,
+        isTrue,
+      );
+    });
+
+    test('the coach switch round-trips through toMap/fromMap', () {
+      final off = profile().copyWith(coachEnabled: false);
+
+      expect(UserProfile.fromMap(off.toMap()).coachEnabled, isFalse);
+    });
+  });
+
   group('v8 settings', () {
     test('default to off, no goal and the stock reminder times', () {
       final fresh = profile();

@@ -59,7 +59,7 @@ class DatabaseHelper {
   ///  7. Bump pubspec.yaml's version build number.
   ///  8. Manually smoke-test upgrading a real pre-change install before
   ///     shipping.
-  static const int _databaseVersion = 9;
+  static const int _databaseVersion = 10;
 
   /// The schema version this build writes and understands. Exposed for the
   /// backup importer, which refuses files from a newer build.
@@ -129,7 +129,39 @@ class DatabaseHelper {
     if (oldVersion < 9) {
       await _upgradeToV9(db);
     }
+    if (oldVersion < 10) {
+      await _upgradeToV10(db);
+    }
   }
+
+  /// The coach switch (defaulted on) and the coach's feedback table.
+  Future<void> _upgradeToV10(Database db) async {
+    await db.execute('ALTER TABLE user_profiles ADD COLUMN coachEnabled INTEGER NOT NULL DEFAULT 1');
+    await db.execute(_coachFeedbackTable);
+    await db.execute(_coachFeedbackIndex);
+  }
+
+  /// One rating per exercise per workout: how the coach's suggestion felt
+  /// (-1 too hard, 0 about right, 1 too easy), with the suggestion as shown.
+  /// New in v10. Like every other table here, no foreign key cascade ever
+  /// fires, so deleteWorkout and clearAllData remove these rows themselves.
+  static const String _coachFeedbackTable = '''
+      CREATE TABLE coach_feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workoutSessionId INTEGER NOT NULL,
+        exerciseId INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        action TEXT NOT NULL,
+        weightKg REAL NOT NULL,
+        repsMin INTEGER NOT NULL,
+        repsMax INTEGER NOT NULL,
+        rating INTEGER NOT NULL,
+        FOREIGN KEY (workoutSessionId) REFERENCES workout_sessions (id) ON DELETE CASCADE,
+        FOREIGN KEY (exerciseId) REFERENCES exercises (id)
+      )
+    ''';
+  static const String _coachFeedbackIndex =
+      'CREATE UNIQUE INDEX idx_coach_feedback_unique ON coach_feedback (workoutSessionId, exerciseId)';
 
   /// The notification sound switch. Defaulted on, so nothing changes for an
   /// existing install until the user turns it off.
@@ -447,7 +479,8 @@ class DatabaseHelper {
         workoutReminderMinutes INTEGER NOT NULL DEFAULT 1080,
         weighInReminderDays TEXT,
         weighInReminderMinutes INTEGER NOT NULL DEFAULT 450,
-        notificationSoundEnabled INTEGER NOT NULL DEFAULT 1
+        notificationSoundEnabled INTEGER NOT NULL DEFAULT 1,
+        coachEnabled INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -586,6 +619,9 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_workout_exercise_groups_workout ON workout_exercise_groups (workoutSessionId)');
     await db.execute('CREATE UNIQUE INDEX idx_workout_exercise_groups_unique ON workout_exercise_groups (workoutSessionId, exerciseId)');
     await db.execute('CREATE INDEX idx_body_measurements_type_date ON body_measurements (type, date)');
+
+    await db.execute(_coachFeedbackTable);
+    await db.execute(_coachFeedbackIndex);
   }
 
   Future<void> _seedDefaultData(DatabaseExecutor db) async {
@@ -624,6 +660,7 @@ class DatabaseHelper {
     'workout_templates',
     'workout_exercise_groups',
     'body_measurements',
+    'coach_feedback',
   ];
 
   Future<Map<String, dynamic>> exportAllTables() async {
@@ -867,6 +904,7 @@ class DatabaseHelper {
       await txn.delete('exercise_categories');
       await txn.delete('workout_templates');
       await txn.delete('body_measurements');
+      await txn.delete('coach_feedback');
 
       if (reseedDefaults) {
         await _seedDefaultData(txn);

@@ -51,6 +51,7 @@ class MyApp extends StatelessWidget {
             ..update(
               unit: user.weightUnit,
               defaultBarWeightKg: user.defaultBarWeightKg,
+              enabled: user.coachEnabled,
             ),
         ),
         // Left lazy: the first read is the workout screen's header pill, long
