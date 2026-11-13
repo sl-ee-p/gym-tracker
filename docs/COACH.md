@@ -2,7 +2,7 @@
 
 The coach reads an exercise's logged history and does four things. It estimates the 1RM trend and suggests the next session's weight and reps. It also flags stalls and recommends a deload. All of it is pure maths on existing data. The only state is the lifter's optional ratings (§ 8b, schema v10).
 
-Status: built on `feature/coach` (C0–C5), not merged. Free for now; see Free vs Pro for the gating follow-up.
+Status: built on `feature/coach` (C0–C5) and extended on `feature/coach-feedback` (F1–F5: Settings switch, ratings, explanations; 1.2.0+17), neither merged. Free for now; see Free vs Pro for the gating follow-up.
 
 ## Progression rules (v1, tunable by the backtest)
 All maths works on **completed** workouts only. A **working set** is non-warm-up, weight > 0, reps ≥ 1; partial reps are ignored. Sessions with an exercise = "exposures". Weights are computed in kg and rounded in the **display unit**.
@@ -91,7 +91,7 @@ After logging sets, the lifter can rate the suggestion: **Too easy / About right
 - **`b ≤ −1` (ease off):** weight goes up only when set 2 also reaches the top (slack 0), never two steps at once, and one miss below the range steps back.
 - **`b ≥ +1` (push):** one rep short of the top is enough to add weight, set 2 may be 2 short, and two steps come from `hi+2`.
 - **Last rating acts directly:** "too easy" on the session the suggestion builds on turns a hold or add-reps into add weight; "too hard" after an add-weight holds the weight.
-- **Explanations:** reason codes `feedbackAdjusted` (counts + direction), `lastRating`, and `missedEaseOff` (the one-miss step back; `missedTwice` stays for two real misses).
+- **Explanations:** reason codes `feedbackAdjusted` (counts + direction), `lastRating` (with the rated top set; it replaces the reason of the rule it overrode, so "Time to add weight" never sits above "the weight stays the same"), and `missedEaseOff` (the one-miss step back; `missedTwice` stays for two real misses).
 - **UI:**
   - **Workout row:** after the first working set, "How did 92.5 kg × 6–8 feel?" with three chips. The answer collapses to "Noted: … · Change". It is never asked on deloads or after "Not now".
   - **Coach card:** a "Tuned to your ratings" line when a feedback reason applies. A "too hard" or "too easy" on the last session becomes the headline reason.
@@ -189,6 +189,11 @@ Progress:
 - [x] C3: CoachService, CoachProvider, Coach card on Exercise details, "Why?" sheet
 - [x] C4: workout-screen row (Use / Not now / Why?), set-2 target, deload offer (Start deload / Not now)
 - [x] C5: wrap-up: analyze, full suite, emulator screenshots (light, dark, 2× font), 1.1.0+16
+- [x] F1: Settings switch + schema v10 (`coachEnabled`, `coach_feedback`)
+- [x] F2: engine calibration from ratings (§ 8b); backtest byte-identical without feedback
+- [x] F3: rating prompt in the workout row
+- [x] F4: "What the coach learned", "Tuned to your ratings", plainer reasons
+- [x] F5: wrap-up on a16 (real v9 → v10 upgrade, rate, card, Why sheet, switch off/on; light, dark, 2× font), 1.2.0+17
 
 ## Validation (C2)
 

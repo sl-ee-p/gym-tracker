@@ -47,7 +47,7 @@ Schema is versioned (`_databaseVersion`); `_onUpgrade` uses a chain of non-exclu
 ### Localisation and the coach
 
 - Strings for new UI go into `lib/l10n/app_en.arb` (gen-l10n, `l10n.yaml`; `AppLocalizations.of(context)`). Only English ships, so `supportedLocales` is `[en]`. Older screens are still hard-coded English. Don't migrate them as a side effect of other work.
-- The progressive-overload coach (`docs/COACH.md`) keeps its maths in `lib/coach/`, which is pure Dart with no Flutter imports, so `tool/coach_backtest.dart` can run it with `dart run`. The engine returns reason codes, never text.
+- The progressive-overload coach (`docs/COACH.md`) keeps its maths in `lib/coach/`, which is pure Dart with no Flutter imports, so `tool/coach_backtest.dart` can run it with `dart run`. The engine returns reason codes, never text. Its only stored state is the lifter's optional ratings (`coach_feedback`, schema v10), passed to `ProgressionEngine.analyze` like the history; with no ratings the rules are exactly the stateless ones, so `tool/coach_backtest.dart` output must not change. The Settings switch is `user_profiles.coachEnabled`, read through `CoachProvider.enabled`.
 
 ## Existing documentation
 

@@ -451,13 +451,29 @@
   "@coachReasonPriorHarder": {
     "description": "Reason: no ratings for this exercise yet; the ratings of other exercises made the coach push harder."
   },
-  "coachReasonLastTooHard": "You rated last session too hard, so the weight stays the same.",
+  "coachReasonLastTooHard": "Last time you did {weight} × {reps}, the top of your range, but rated it too hard. The weight stays the same until it feels right.",
   "@coachReasonLastTooHard": {
-    "description": "Reason: the last session was rated too hard."
+    "description": "Reason: the last session was rated too hard, so the coach holds the weight instead of adding some.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
   },
-  "coachReasonLastTooEasy": "You rated last session too easy, so the weight goes up now.",
+  "coachReasonLastTooEasy": "Last time you did {weight} × {reps} and rated it too easy, so the weight goes up now.",
   "@coachReasonLastTooEasy": {
-    "description": "Reason: the last session was rated too easy."
+    "description": "Reason: the last session was rated too easy, so the coach adds weight instead of holding it.",
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
   },
   "coachRateQuestion": "How did {target} feel?",
   "@coachRateQuestion": {

@@ -279,12 +279,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'You often rate other exercises too easy, so this one adds weight sooner too.';
 
   @override
-  String get coachReasonLastTooHard =>
-      'You rated last session too hard, so the weight stays the same.';
+  String coachReasonLastTooHard(String weight, int reps) {
+    return 'Last time you did $weight × $reps, the top of your range, but rated it too hard. The weight stays the same until it feels right.';
+  }
 
   @override
-  String get coachReasonLastTooEasy =>
-      'You rated last session too easy, so the weight goes up now.';
+  String coachReasonLastTooEasy(String weight, int reps) {
+    return 'Last time you did $weight × $reps and rated it too easy, so the weight goes up now.';
+  }
 
   @override
   String coachRateQuestion(String target) {

@@ -90,8 +90,8 @@ class CoachText {
       CoachReasonCode.feedbackAdjusted => _feedback(r),
       CoachReasonCode.lastRating =>
         (r.direction ?? 0) > 0
-            ? l10n.coachReasonLastTooEasy
-            : l10n.coachReasonLastTooHard,
+            ? l10n.coachReasonLastTooEasy(w, reps)
+            : l10n.coachReasonLastTooHard(w, reps),
     };
   }
 

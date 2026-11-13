@@ -130,7 +130,8 @@ enum CoachReasonCode {
   feedbackAdjusted,
 
   /// The last session was rated: direction 1 = too easy (weight goes up
-  /// now), -1 = too hard (the weight holds).
+  /// now), -1 = too hard (the weight holds). weight, reps = its top set.
+  /// Replaces the reason of the rule it overrode.
   lastRating,
 }
 

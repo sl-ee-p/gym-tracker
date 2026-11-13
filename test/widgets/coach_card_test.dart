@@ -246,8 +246,12 @@ void main() {
       repsMin: 6,
       repsMax: 8,
       reasons: [
-        CoachReason(CoachReasonCode.hitTopOfRange, weight: 90, reps: 8),
-        CoachReason(CoachReasonCode.lastRating, direction: -1),
+        CoachReason(
+          CoachReasonCode.lastRating,
+          weight: 90,
+          reps: 8,
+          direction: -1,
+        ),
       ],
     );
     await _pump(
@@ -258,7 +262,8 @@ void main() {
     );
     expect(
       find.text(
-        'You rated last session too hard, so the weight stays the same.',
+        'Last time you did 90 kg × 8, the top of your range, but rated it '
+        'too hard. The weight stays the same until it feels right.',
       ),
       findsOneWidget,
     );

@@ -1,42 +1,42 @@
-# Handoff: progressive-overload coach (`feature/coach`)
+# Handoff: coach feedback (`feature/coach-feedback`, off `feature/coach`)
 
-Spec: `docs/COACH.md`.
+Plan: on/off switch, ratings that teach the coach, clearer explanations. Rules in `docs/COACH.md` § 8b.
 
-## Done
-- **C0:** gen-l10n scaffold (English ARB only, `supportedLocales` [en]), `docs/COACH.md`, `CLAUDE.md` note, version 1.1.0+12.
-  - Checked on the a16 emulator: debug build launches, Home and Exercises render, no Flutter errors.
-
-- **C1:** pure engine `lib/coach/` (`coach_models.dart`, `load_grid.dart`, `progression_engine.dart`) + 47 table-driven tests in `test/coach/`. Version 1.1.0+13.
-  - Rules refined while testing, now reflected in `docs/COACH.md`: the first session of a window is a baseline; regression only counts at the same or a lighter weight.
-  - No UI yet, so there was nothing to check on the emulator.
-
-- **C2:** `tool/coach_backtest.dart` + tuning. Reports are in `~/scratch/coach-backtest/` (personal data, not in the repo). Backups used: the 20 Oct one and the owner's 11 Nov upload (`data/`). Aggregate results in `docs/COACH.md` § Validation. Version 1.1.0+14.
-  - **Paused for the owner's review** of the agreement + wrong-looking cases before the UI.
-
-- **C3:** `CoachService` + `CoachProvider` (refreshed by a proxy provider on workout/unit changes) + Coach card on Exercise details + "Why?" sheet. Version 1.1.0+15.
-  - Checked on a16 with the owner's 11 Nov backup and a demo copy that adds a stalled exercise (`~/scratch/coach-backtest/demo/`): progressing, stalled + deload, baseline, empty, Why sheet; light, dark, 2× font. Screenshots in `build-logs/c3-*.png` (gitignored).
-  - The emulator currently holds the **demo** data. The owner's real data is in the app's pre-restore copy under Downloads/PlateLog and in `~/scratch/coach-backtest/data/`.
-
-- **C4:** `CoachSuggestionRow` inside `SetInputForm` through a new optional `suggestionBuilder` (the form still never fills itself; only "Use" fills it). Top-set target, then set 2. "Not now" hides it per workout; a stall offers a deload; "Start deload" switches the targets.
-  - On a16: Use fills 92.5 kg × 8, the set-2 target follows, the deload offer and started deload work (light, dark, 2× font).
-  - TalkBack label: "Fill in 92.5 kg for 8 reps".
-- **C5:** version 1.1.0+16, docs updated.
-
-- **Release (2026-11-12):** AAB 1.1.0+16 built from `feature/coach` and copied to `~/platelog-1.1.0-16.aab`.
-  - Signed with the upload key (SHA-256 80:E6:92:…:FE:52); the R8 mapping is bundled.
-  - Permissions are identical to +11, with no INTERNET.
-  - x86_64 release smoke test on a16 with the owner's restored backup: Coach card, workout row and Use all work, with no errors.
+## Done (1.2.0+17, pushed, not merged)
+- **F1:** Settings → Workout → Coach switch (on by default). Schema v10: `user_profiles.coachEnabled` and `coach_feedback` (one rating per workout and exercise, in JSON backups, removed with its workout and by Clear All Data).
+- **F2:** `ProgressionEngine.analyze(feedback:, prior:)`:
+  - turns the ratings into a calibration from −2 to +2;
+  - easing off and pushing change the add-weight and step-back thresholds;
+  - the last session's rating acts directly.
+  - With no feedback, the backtest reports for both windows are byte-identical to before.
+- **F3:** "How did 92.5 kg × 6–8 feel?" with Too easy / About right / Too hard in the workout row after the first working set. The answer collapses to "Noted · Change". Deloads are not rated.
+- **F4:** the Why sheet's "What the coach learned" section and the card's "Tuned to your ratings" line. A rating-driven one-miss step back says so (`missedEaseOff`), and the rating's reason replaces the reason of the rule it overrode.
+- **F5:**
+  - `flutter analyze`: only the 8 earlier infos remain, in untouched files.
+  - Full suite: 470 tests pass.
+  - Device check on a16 with a fresh x86_64 debug APK:
+    - the owner's real v9 database upgraded to v10, with data intact;
+    - rated Bayesian Curls "too hard", and the row was saved;
+    - the rating survived reopening the workout;
+    - Change reopened the chips in dark mode at 2× font, where they wrap;
+    - after completing the workout, the card held at 17.5 kg × 13–16 with "Tuned to your ratings", and the Why sheet explained it;
+    - Coach off hid the card and the row; turning it back on restored them.
+  - Screenshots are in `build-logs/f5-*.png` (gitignored).
 
 ## Not verified
-- Italian layout: no IT ARB, by the owner's decision.
-- Pro gating: deferred until `feature/pro-unlock` merges.
+- Backup → restore of `coach_feedback` on a device. It is covered by unit tests only: `dataTables` export/import plus the migration test.
+- Italian: English ARB only, by the owner's earlier decision.
+- Release/AAB build: not built. The last AAB is 1.1.0+16.
+- The "learns without a rating" idea was dropped. A rating is adjusted by what was logged, but sessions without a rating teach nothing.
+
+## Emulator state
+- a16 runs the **debug** 1.2.0+17 build with the owner's real data, plus the test workout 96, now completed (Bayesian Curls 17.5 kg × 16, rated too hard).
+- The release install's data from before this session is in `~/scratch/coach-feedback/emu/release-1.1.0-data.tar` (v9 database).
+
+## Seen, not changed
+- The "Set added successfully!" snackbar, which has a Start Rest Timer action, stays on screen until it is swiped or acted on, even across screens. This predates this branch.
 
 ## Next
-- The owner reviews the feature on a device. Merge `feature/coach` only when asked.
-- When `feature/pro-unlock` merges: add `ProFeature.coach`, wrap `CoachCard` in `ProGate`, and hide `CoachSuggestionRow` for free users (no paywall on the workout screen).
-- Extras proposed in `docs/COACH.md`: RPE tweak, per-exercise rep-range override, Progress-tab line, weekly digest.
-- Emulator state: a16 runs the x86_64 **release** build with the owner's real 11 Nov backup and an in-progress test workout (Chest Press, no sets). Discard it before reusing the emulator.
-
-## Emulator notes
-- a16 now runs the **debug** build (version 1.1.0).
-- The earlier release-signed install was uninstalled, because the signatures differ. Its data was saved first to `~/scratch/platelog-coach/emu-data-before-coach.tar`, and its `gym_tracker.db` (the owner's history) was pushed back as root.
+- The owner tries it on a device. Merge `feature/coach` + `feature/coach-feedback` only when asked.
+- The Pro gating follow-up is unchanged (see `docs/COACH.md` § Free vs Pro).
+- Possible extra: a per-exercise "Reset what the coach learned" action.

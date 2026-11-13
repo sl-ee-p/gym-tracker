@@ -663,6 +663,11 @@ void main() {
           final reason = s.reasons.firstWhere((x) => x.code == c.reason);
           expect(reason.direction, c.direction);
         }
+        // An overridden rule's reason doesn't stay to contradict it.
+        if (c.reason == CoachReasonCode.lastRating) {
+          expect(codes, isNot(contains(CoachReasonCode.hitTopOfRange)));
+          expect(codes, isNot(contains(CoachReasonCode.climbingReps)));
+        }
       });
     }
 

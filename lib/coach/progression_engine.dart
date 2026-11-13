@@ -497,19 +497,35 @@ class ProgressionEngine {
       // The rating of the session this builds on acts directly: "too easy"
       // after a hold means the weight goes up now, "too hard" after a jump
       // means it stays where it is.
+      // The rule it overrides was the last reason added; its advice no
+      // longer holds, so the rating's reason replaces it.
       final rated = _ratingOf(feedback, base);
       if (rated == CoachRating.tooEasy &&
           (suggestion.action == CoachAction.repeat ||
               suggestion.action == CoachAction.addReps)) {
-        reasons.add(
-          const CoachReason(CoachReasonCode.lastRating, direction: 1),
-        );
+        reasons
+          ..removeLast()
+          ..add(
+            CoachReason(
+              CoachReasonCode.lastRating,
+              weight: w,
+              reps: r,
+              direction: 1,
+            ),
+          );
         suggestion = make(CoachAction.addWeight, grid.up(w), lo, range.hi);
       } else if (rated == CoachRating.tooHard &&
           suggestion.action == CoachAction.addWeight) {
-        reasons.add(
-          const CoachReason(CoachReasonCode.lastRating, direction: -1),
-        );
+        reasons
+          ..removeLast()
+          ..add(
+            CoachReason(
+              CoachReasonCode.lastRating,
+              weight: w,
+              reps: r,
+              direction: -1,
+            ),
+          );
         suggestion = make(CoachAction.repeat, w, lo, range.hi);
       }
 
