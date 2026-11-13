@@ -39,6 +39,14 @@ class CoachProvider extends ChangeNotifier {
   /// Workout id → exercise ids where the user declined the deload banner.
   final Map<int?, Set<int>> _deloadDeclined = {};
 
+  /// (workout, exercise) → saved rating; a null value means "looked up,
+  /// none yet". Ratings are stored, unlike the choices above.
+  final Map<(int, int), CoachRating?> _ratings = {};
+  final Set<(int, int)> _ratingsLoading = {};
+
+  /// Ratings the user reopened with "Change".
+  final Set<(int, int)> _changingRating = {};
+
   /// Called by the proxy provider when workouts or profile settings change.
   void update({
     required String unit,
@@ -123,6 +131,69 @@ class CoachProvider extends ChangeNotifier {
 
   void declineDeload(int? workoutId, int exerciseId) {
     (_deloadDeclined[workoutId] ??= {}).add(exerciseId);
+    notifyListeners();
+  }
+
+  /// The saved rating for [exerciseId] in [workoutId], or null. Looks it
+  /// up the first time, so a rebuilt screen still shows the answer.
+  CoachRating? ratingFor(int workoutId, int exerciseId) {
+    final key = (workoutId, exerciseId);
+    if (!_ratings.containsKey(key) && !_ratingsLoading.contains(key)) {
+      _ratingsLoading.add(key);
+      scheduleMicrotask(() async {
+        try {
+          final rating = await _service.ratingFor(workoutId, exerciseId);
+          if (_disposed) return;
+          // A tap that landed while this loaded wins.
+          if (!_ratings.containsKey(key)) {
+            _ratings[key] = rating;
+            notifyListeners();
+          }
+        } catch (e) {
+          debugPrint('Coach: could not read a rating: $e');
+        } finally {
+          _ratingsLoading.remove(key);
+        }
+      });
+    }
+    return _ratings[key];
+  }
+
+  /// Saves how [suggestion] felt. It reaches the engine once the workout is
+  /// completed, which refreshes every report anyway.
+  Future<void> rate(
+    int workoutId,
+    int exerciseId,
+    CoachSuggestion suggestion,
+    CoachRating rating,
+  ) async {
+    final key = (workoutId, exerciseId);
+    _ratings[key] = rating;
+    _changingRating.remove(key);
+    notifyListeners();
+    try {
+      await _service.rate(
+        workoutId: workoutId,
+        exerciseId: exerciseId,
+        feedback: CoachFeedback(
+          date: DateTime.now(),
+          action: suggestion.action,
+          weightKg: suggestion.weightKg,
+          repsMin: suggestion.repsMin,
+          repsMax: suggestion.repsMax,
+          rating: rating,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Coach: could not save a rating: $e');
+    }
+  }
+
+  bool isChangingRating(int workoutId, int exerciseId) =>
+      _changingRating.contains((workoutId, exerciseId));
+
+  void changeRating(int workoutId, int exerciseId) {
+    _changingRating.add((workoutId, exerciseId));
     notifyListeners();
   }
 

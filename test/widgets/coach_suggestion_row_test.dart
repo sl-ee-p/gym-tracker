@@ -16,8 +16,25 @@ import 'package:gym_app/widgets/set_input_form.dart';
 import 'package:provider/provider.dart';
 
 class _FakeService extends CoachService {
-  _FakeService(this.report);
+  _FakeService(this.report, {this.stored});
   final CoachReport report;
+
+  /// The rating "in the database".
+  CoachRating? stored;
+  CoachFeedback? saved;
+
+  @override
+  Future<CoachRating?> ratingFor(int workoutId, int exerciseId) async => stored;
+
+  @override
+  Future<void> rate({
+    required int workoutId,
+    required int exerciseId,
+    required CoachFeedback feedback,
+  }) async {
+    saved = feedback;
+    stored = feedback.rating;
+  }
 
   @override
   Future<CoachReport> reportFor(
@@ -30,15 +47,18 @@ class _FakeService extends CoachService {
 
 final _exercise = Exercise(id: 7, name: 'Chest Press', categoryId: 1);
 
-CoachReport _report({DeloadAdvice? deload}) => CoachReport(
+CoachReport _report({
+  DeloadAdvice? deload,
+  CoachAction action = CoachAction.repeat,
+}) => CoachReport(
   status: deload == null ? CoachStatus.progressing : CoachStatus.stalled,
   range: const RepRange(6, 8, learned: true),
   step: 2.5,
   unit: 'kg',
   exposures: 8,
   deload: deload,
-  suggestion: const CoachSuggestion(
-    action: CoachAction.repeat,
+  suggestion: CoachSuggestion(
+    action: action,
     weight: 92.5,
     weightKg: 92.5,
     repsMin: 8,
@@ -60,6 +80,7 @@ Future<void> _pump(
   CoachReport report, {
   int logged = 0,
   bool enabled = true,
+  _FakeService? service,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.5;
@@ -70,7 +91,7 @@ Future<void> _pump(
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(
           create: (_) =>
-              CoachProvider(service: _FakeService(report))
+              CoachProvider(service: service ?? _FakeService(report))
                 ..update(unit: 'kg', defaultBarWeightKg: 20, enabled: enabled),
         ),
       ],
@@ -162,5 +183,59 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No progress for 5 sessions'), findsNothing);
     expect(find.text('92.5 kg × 8'), findsOneWidget);
+  });
+
+  group('rating', () {
+    testWidgets('not asked before the first working set', (tester) async {
+      await _pump(tester, _report());
+      expect(find.text('How did 92.5 kg × 8 feel?'), findsNothing);
+    });
+
+    testWidgets('asked after a set; the answer is saved and can be changed', (
+      tester,
+    ) async {
+      final service = _FakeService(_report());
+      await _pump(tester, _report(), logged: 1, service: service);
+      expect(find.text('How did 92.5 kg × 8 feel?'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Rate 92.5 kg × 8 as too hard'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Too hard'));
+      await tester.pumpAndSettle();
+      expect(service.stored, CoachRating.tooHard);
+      expect(service.saved!.weightKg, 92.5);
+      expect(service.saved!.repsMin, 8);
+      expect(service.saved!.action, CoachAction.repeat);
+      expect(find.textContaining('Noted: Too hard'), findsOneWidget);
+      expect(find.text('About right'), findsNothing);
+
+      await tester.tap(find.text('Change'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('About right'));
+      await tester.pumpAndSettle();
+      expect(service.stored, CoachRating.right);
+      expect(find.textContaining('Noted: About right'), findsOneWidget);
+    });
+
+    testWidgets('a saved answer shows after a rebuild', (tester) async {
+      final service = _FakeService(_report(), stored: CoachRating.tooEasy);
+      await _pump(tester, _report(), logged: 2, service: service);
+      expect(find.textContaining('Noted: Too easy'), findsOneWidget);
+    });
+
+    testWidgets('deload sessions are not rated', (tester) async {
+      await _pump(tester, _report(action: CoachAction.deload), logged: 1);
+      expect(find.text('Coach · deload'), findsOneWidget);
+      expect(find.textContaining('feel?'), findsNothing);
+    });
+
+    testWidgets('Not now hides the question too', (tester) async {
+      await _pump(tester, _report(), logged: 1);
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('feel?'), findsNothing);
+    });
   });
 }

@@ -465,6 +465,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You rated last session too easy, so the weight goes up now.'**
   String get coachReasonLastTooEasy;
+
+  /// Asked in the workout row after a set, about the coach's top-set suggestion, e.g. "How did 92.5 kg × 6–8 feel?".
+  ///
+  /// In en, this message translates to:
+  /// **'How did {target} feel?'**
+  String coachRateQuestion(String target);
+
+  /// Rating chip: the suggestion was too light.
+  ///
+  /// In en, this message translates to:
+  /// **'Too easy'**
+  String get coachRateTooEasy;
+
+  /// Rating chip: the suggestion fit.
+  ///
+  /// In en, this message translates to:
+  /// **'About right'**
+  String get coachRateRight;
+
+  /// Rating chip: the suggestion was too heavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Too hard'**
+  String get coachRateTooHard;
+
+  /// Screen-reader label of a rating chip, e.g. "Rate 92.5 kg × 6–8 as too hard".
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {target} as {rating}'**
+  String coachRateSemantics(String target, String rating);
+
+  /// Shown after rating the suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Noted: {rating}. The coach uses it from your next session.'**
+  String coachRatedNoted(String rating);
+
+  /// Button that reopens the rating chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get coachRateChange;
 }
 
 class _AppLocalizationsDelegate

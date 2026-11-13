@@ -458,5 +458,51 @@
   "coachReasonLastTooEasy": "You rated last session too easy, so the weight goes up now.",
   "@coachReasonLastTooEasy": {
     "description": "Reason: the last session was rated too easy."
+  },
+  "coachRateQuestion": "How did {target} feel?",
+  "@coachRateQuestion": {
+    "description": "Asked in the workout row after a set, about the coach's top-set suggestion, e.g. \"How did 92.5 kg × 6–8 feel?\".",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRateTooEasy": "Too easy",
+  "@coachRateTooEasy": {
+    "description": "Rating chip: the suggestion was too light."
+  },
+  "coachRateRight": "About right",
+  "@coachRateRight": {
+    "description": "Rating chip: the suggestion fit."
+  },
+  "coachRateTooHard": "Too hard",
+  "@coachRateTooHard": {
+    "description": "Rating chip: the suggestion was too heavy."
+  },
+  "coachRateSemantics": "Rate {target} as {rating}",
+  "@coachRateSemantics": {
+    "description": "Screen-reader label of a rating chip, e.g. \"Rate 92.5 kg × 6–8 as too hard\".",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRatedNoted": "Noted: {rating}. The coach uses it from your next session.",
+  "@coachRatedNoted": {
+    "description": "Shown after rating the suggestion.",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "coachRateChange": "Change",
+  "@coachRateChange": {
+    "description": "Button that reopens the rating chips."
   }
 }

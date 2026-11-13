@@ -284,4 +284,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get coachReasonLastTooEasy =>
       'You rated last session too easy, so the weight goes up now.';
+
+  @override
+  String coachRateQuestion(String target) {
+    return 'How did $target feel?';
+  }
+
+  @override
+  String get coachRateTooEasy => 'Too easy';
+
+  @override
+  String get coachRateRight => 'About right';
+
+  @override
+  String get coachRateTooHard => 'Too hard';
+
+  @override
+  String coachRateSemantics(String target, String rating) {
+    return 'Rate $target as $rating';
+  }
+
+  @override
+  String coachRatedNoted(String rating) {
+    return 'Noted: $rating. The coach uses it from your next session.';
+  }
+
+  @override
+  String get coachRateChange => 'Change';
 }

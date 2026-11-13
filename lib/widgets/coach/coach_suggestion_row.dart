@@ -60,6 +60,13 @@ class CoachSuggestionRow extends StatelessWidget {
         !coach.isDeloadDeclined(workoutId, id) &&
         workingSetsLogged == 0;
     final target = _target(report, deloadStarted);
+    // Once a set is in, ask how the top-set suggestion felt. Deloads are
+    // meant to feel easy, so they are never rated.
+    final rateable =
+        workoutId != null &&
+        workingSetsLogged >= 1 &&
+        !target.deload &&
+        s.action != CoachAction.deload;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -105,6 +112,16 @@ class CoachSuggestionRow extends StatelessWidget {
             ),
             onDismiss: () => coach.dismiss(workoutId, id),
           ),
+          if (rateable) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _RatingPrompt(
+              target: text.suggestion(s),
+              rating: coach.ratingFor(workoutId!, id),
+              changing: coach.isChangingRating(workoutId!, id),
+              onRate: (rating) => coach.rate(workoutId!, id, s, rating),
+              onChange: () => coach.changeRating(workoutId!, id),
+            ),
+          ],
         ],
       ),
     );
@@ -244,6 +261,104 @@ class _TargetRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "How did 92.5 kg × 6–8 feel?" with Too easy / About right / Too hard,
+/// collapsing to a one-line "Noted" with Change once answered.
+class _RatingPrompt extends StatelessWidget {
+  const _RatingPrompt({
+    required this.target,
+    required this.rating,
+    required this.changing,
+    required this.onRate,
+    required this.onChange,
+  });
+
+  final String target;
+  final CoachRating? rating;
+  final bool changing;
+  final ValueChanged<CoachRating> onRate;
+  final VoidCallback onChange;
+
+  static String label(AppLocalizations l10n, CoachRating r) => switch (r) {
+    CoachRating.tooEasy => l10n.coachRateTooEasy,
+    CoachRating.right => l10n.coachRateRight,
+    CoachRating.tooHard => l10n.coachRateTooHard,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final muted = scheme.onSurfaceVariant;
+    final answered = rating != null && !changing;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        answered ? AppSpacing.xs : AppSpacing.md,
+        AppSpacing.sm,
+        answered ? AppSpacing.xs : AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: answered
+          ? Row(
+              children: [
+                Icon(Icons.check_circle_outline, size: 18, color: muted),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.coachRatedNoted(label(l10n, rating!)),
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onChange,
+                  child: Text(l10n.coachRateChange),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.coachRateQuestion(target),
+                  style: theme.textTheme.labelLarge?.copyWith(color: muted),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    for (final r in [
+                      CoachRating.tooEasy,
+                      CoachRating.right,
+                      CoachRating.tooHard,
+                    ])
+                      Semantics(
+                        label: l10n.coachRateSemantics(
+                          target,
+                          label(l10n, r).toLowerCase(),
+                        ),
+                        excludeSemantics: true,
+                        button: true,
+                        selected: r == rating,
+                        child: ChoiceChip(
+                          label: Text(label(l10n, r)),
+                          selected: r == rating,
+                          onSelected: (_) => onRate(r),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }

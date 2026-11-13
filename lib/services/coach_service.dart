@@ -67,6 +67,21 @@ class CoachService {
     return 0.5 * 2 * mean * confidence;
   }
 
+  /// The lifter's rating of [exerciseId] in [workoutId], if any.
+  Future<CoachRating?> ratingFor(int workoutId, int exerciseId) =>
+      _repository.getCoachRating(workoutId, exerciseId);
+
+  /// Saves (or replaces) a rating. It counts once the workout is completed.
+  Future<void> rate({
+    required int workoutId,
+    required int exerciseId,
+    required CoachFeedback feedback,
+  }) => _repository.upsertCoachFeedback(
+    workoutSessionId: workoutId,
+    exerciseId: exerciseId,
+    feedback: feedback,
+  );
+
   /// Groups progress rows (ordered by workout date, then set number) into
   /// one exposure per workout, without warm-ups.
   static List<CoachExposure> exposuresFromRows(
